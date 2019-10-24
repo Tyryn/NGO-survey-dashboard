@@ -103,19 +103,21 @@ ui <- fluidPage(fluidRow(column(12, offset = 5, titlePanel("Survey"))),
                       fluidRow(
                         conditionalPanel(
                           condition = "input.ngo_or_donor == 'ngo'",
-                          selectInput(
-                            "country", "5. Regions of operation",
-                            c("South Africa"=="south_africa", "Southern Africa"=="southern_africa", "Rest of world"=="row"),
-                            multiple = TRUE
+                          checkboxGroupInput(
+                            "country", "5. Regions of operation", 
+                            choices = c("South Africa"="south_africa", "Southern Africa"="southern_africa",
+                                        "Rest of world"="row"),
+                            selected = "south_africa"
                           )
                         )
                       ),
                       fluidRow(
                         conditionalPanel(
-                          condition = "input.ngo_or_donor == 'ngo' && input.country == 'south_africa'",
+                          condition = "input.ngo_or_donor == 'ngo' && input.country && 
+                          input.country.indexOf('south_africa') > -1",  ## Necessary javascript expression
                           selectInput(
                             "province",
-                            "5. South African provinces where your organization operates",
+                            "6. South African provinces where your organization operates",
                             c("All provinces" = "",
                               city_names$ProvinceName),
                             multiple = TRUE
@@ -124,10 +126,11 @@ ui <- fluidPage(fluidRow(column(12, offset = 5, titlePanel("Survey"))),
                       ),
                       fluidRow(
                         conditionalPanel(
-                          condition = "input.ngo_or_donor == 'ngo' && input.country == 'south_africa'",
+                          condition = "input.ngo_or_donor == 'ngo' && input.country && 
+                          input.country.indexOf('south_africa') > -1",
                           selectInput(
                             "municipality",
-                            "6. (Nearest) South Africa village, town, or city where your organization operates",
+                            "7. (Nearest) South African village, town, or city where your organization operates",
                             city_names$AccentCity
                           ),
                           multiple = TRUE
@@ -135,59 +138,77 @@ ui <- fluidPage(fluidRow(column(12, offset = 5, titlePanel("Survey"))),
                       ),
                       fluidRow(
                         conditionalPanel(
-                          condition = "input.ngo_or_donor == 'ngo'",
-                          numericInput("perm_employees", "7. Number of permanent employees", 10, min = 0),
-                          numericInput("temp_employees", "8. Number of temporary employees", 10, min = 0),
-                          numericInput("volunteers", "9. Number of volunteers", 10, min = 0)
-                        )
-                      ),
-                      fluidRow(
-                        conditionalPanel(
-                          condition = "input.ngo_or_donor == 'ngo'",
+                          condition = "input.ngo_or_donor == 'ngo' && input.country && 
+                          input.country.indexOf('south_africa') > -1",
+                          numericInput("perm_employees", "8. Number of permanent employees", 10, min = 0),
+                          numericInput("temp_employees", "9. Number of temporary employees", 10, min = 0),
+                          numericInput("volunteers", "10. Number of volunteers", 10, min = 0),
                           sliderInput(
                             "target_age",
-                            "10. Targetted age range",
+                            "11. Targetted age range",
                             min = 0,
                             max = 100,
                             value = c(0, 20)
-                          )
-                        )
-                      ),
-                      fluidRow(
-                        conditionalPanel(
-                          condition = "input.ngo_or_donor == 'ngo'",
+                          ),
                           selectInput(
                             "target_gender",
-                            "11. Targetted gender",
+                            "12. Targetted gender",
                             choices = c("Male" = "male", "Female" = "female"),
                             multiple = TRUE
-                          )
-                        )
-                      ),
-                      fluidRow(
-                        conditionalPanel(
-                          condition = "input.ngo_or_donor == 'ngo'",
+                          ),
                           textInput(
                             "service",
-                            "12. Please provide a description of what your organization does"
-                          )
-                        )
-                      ),
-                      fluidRow(
-                        conditionalPanel(
-                          condition = "input.ngo_or_donor == 'ngo'",
-                          selectInput("priorities", "13. Next year, we are prioritising:", choices = priorities)
-                        )
-                      ),
-                      fluidRow(
-                        conditionalPanel(
-                          condition = "input.ngo_or_donor == 'ngo'",
+                            "13. Please provide a description of what your organization does"
+                          ),
+                          selectInput("priorities", "14. Next year, we are prioritising:", choices = priorities),
                           radioButtons(
                             "evaluated",
-                            "14. Has your organization ever been evaluated?",
+                            "15. Has your organization ever been evaluated?",
                             choices = c("Yes", "No")
                           )
+                        ),
+                        conditionalPanel(
+                          condition = "input.ngo_or_donor == 'ngo' && input.country && 
+                          input.country.indexOf('south_africa') > -1",
+                          selectInput(
+                            "municipality",
+                            "7. (Nearest) South African village, town, or city where your organization operates",
+                            city_names$AccentCity
+                          ),
+                          multiple = TRUE
                         )
+                    ),
+                    fluidRow(
+                      conditionalPanel(
+                        condition = "input.ngo_or_donor == 'ngo' && input.country && 
+                          input.country.indexOf('south_africa') < 0",
+                        numericInput("perm_employees", "6. Number of permanent employees", 10, min = 0),
+                        numericInput("temp_employees", "7. Number of temporary employees", 10, min = 0),
+                        numericInput("volunteers", "8. Number of volunteers", 10, min = 0),
+                        sliderInput(
+                          "target_age",
+                          "9. Targetted age range",
+                          min = 0,
+                          max = 100,
+                          value = c(0, 20)
+                        ),
+                        selectInput(
+                          "target_gender",
+                          "10. Targetted gender",
+                          choices = c("Male" = "male", "Female" = "female"),
+                          multiple = TRUE
+                        ),
+                        textInput(
+                          "service",
+                          "11. Please provide a description of what your organization does"
+                        ),
+                        selectInput("priorities", "12. Next year, we are prioritising:", choices = priorities),
+                        radioButtons(
+                          "evaluated",
+                          "13. Has your organization ever been evaluated?",
+                          choices = c("Yes", "No")
+                        )
+                      )
                       )
                     )
                   )),
