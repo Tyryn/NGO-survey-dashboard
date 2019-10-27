@@ -16,11 +16,14 @@ survey_data <-
 # Each question gets its own column, answers comma separated
 
 
-# NEED TO FIGURE OUT WAY TO KEEP CLIENTS AN ID 
+
 ###################################################################################
 # Abbreviated dataset that is the first four variables (they always fill the same cells)
 first_answers <- survey_data[, 1:3]
 first_answers$obs <- 1:nrow(survey_data)
+first_answers <- first_answers %>%
+  select(obs, everything())   
+names(first_answers) <- c("obs", "ngo_or_donor", "name", "established")
 
 ####################################################################################
 # Abbreviated dataset containing only field of operation information
@@ -92,7 +95,7 @@ var_list <- names(field_data)
 var_list <- var_list[-1]    # Remove obs from the list
 
 for (val in var_list) {
-  field_data[, val][shouldChange[, val]] <- ""
+  field_data[, val][shouldChange[, val]] <- NA
 }
 
 names(field_data)[0:ncol(field_data)] <-
@@ -182,6 +185,192 @@ names(province_data)[1] <- "obs" # Rename back to obs
 
 
 
+###############################################################################
+# Abbreviated dataset containing only permanent employees, temp employees, 
+# volunteers and targetted age range
+numbers <- as.character(seq(from = 0, to = 2000)) # Setting limit to 2000
+survey_data_cut <- survey_data[, -c(1:5)] # Done to prevent year or name fields being counted
+
+
+number_data <- lapply(numbers, function(z) {
+  Filter(function(x)
+    any(x == z), survey_data_cut)
+})
+number_data <- lapply(number_data, cbind, obs = 1:nrow(survey_data_cut))
+number_data <- number_data %>%
+  reduce(left_join, by = "obs")
+number_data <-
+  number_data[!duplicated(as.list(number_data))]
+number_data <- number_data %>%
+  select(obs, everything())  
+shouldChange <- number_data
+shouldChange[,-1] <-
+  sapply(number_data[, -1], function(x)
+    x %nin% numbers) # Identify cells that need to be made blank
+
+var_list <- names(number_data)
+var_list <- var_list[-1]    # Remove obs from the list
+
+for (val in var_list) {
+  number_data[, val][shouldChange[, val]] <- NA
+}
+# Shifting non-NA cells to the left
+number_data <- as.data.frame(t(apply(number_data,1, function(x) { return(c(x[!is.na(x)],x[is.na(x)]) )} )))
+emptycols <- sapply(number_data, function (k) all(is.na(k)))
+number_data <- number_data[!emptycols]
+
+# Name employee columns
+names(number_data)[1:6] <- c("obs", "perm_emp", "temp_emp", "volunteers", "age_min",
+                             "age_max")
+
+#####################################################################################
+# Abbreviated dataset containing only gender information
+
+genders <- c("male", "female", "na")
+
+gender_data <- lapply(genders, function(z) {
+  Filter(function(x)
+    any(x == z), survey_data_cut)
+})
+gender_data <- lapply(gender_data, cbind, obs = 1:nrow(survey_data_cut))
+gender_data <- gender_data %>%
+  reduce(left_join, by = "obs")
+gender_data <-
+  gender_data[!duplicated(as.list(gender_data))]
+gender_data <- gender_data %>%
+  select(obs, everything())  
+shouldChange <- gender_data
+shouldChange[,-1] <-
+  sapply(gender_data[, -1], function(x)
+    x %nin% genders) # Identify cells that need to be made blank
+
+var_list <- names(gender_data)
+var_list <- var_list[-1]    # Remove obs from the list
+
+for (val in var_list) {
+  gender_data[, val][shouldChange[, val]] <- NA
+}
+
+# Shifting non-NA cells to the left
+gender_data <- as.data.frame(t(apply(gender_data,1, function(x) { return(c(x[!is.na(x)],x[is.na(x)]) )} )))
+emptycols <- sapply(gender_data, function (k) all(is.na(k)))
+gender_data <- gender_data[!emptycols]
+
+# Naming columns
+names(gender_data)[0:ncol(gender_data)] <-
+  paste("Gender", 0:ncol(gender_data), sep = "_") # Rename each variable field_stub
+names(gender_data)[1] <- "obs" # Rename back to obs
+
+
+#####################################################################################
+# Abbreviated dataset containing only service data
+
+# NEED TO FIGURE THIS ONE OUT!
+
+
+#####################################################################################
+# Abbreviated dataset containing only priorities information
+
+priorities <-
+  c(
+    "Improving our monitoring & evaluation" = "monitoring",
+    "Growing our team" = "team_growth",
+    "Upskilling our team" = "upskilling",
+    "Securing new equipment/venues" = "facilities",
+    "Expanding our organization's scope" = "scope",
+    "Building relationship with funders" = "funders",
+    "Recruiting volunteers" = "volunteers"
+  )
+
+priorities_data <- lapply(priorities, function(z) {
+  Filter(function(x)
+    any(x == z), survey_data_cut)
+})
+priorities_data <- lapply(priorities_data, cbind, obs = 1:nrow(survey_data_cut))
+priorities_data <- priorities_data %>%
+  reduce(left_join, by = "obs")
+priorities_data <-
+  priorities_data[!duplicated(as.list(priorities_data))]
+priorities_data <- priorities_data %>%
+  select(obs, everything())  
+shouldChange <- priorities_data
+shouldChange[,-1] <-
+  sapply(priorities_data[, -1], function(x)
+    x %nin% priorities) # Identify cells that need to be made blank
+
+var_list <- names(priorities_data)
+var_list <- var_list[-1]    # Remove obs from the list
+
+for (val in var_list) {
+  priorities_data[, val][shouldChange[, val]] <- NA
+}
+
+# Shifting non-NA cells to the left
+priorities_data <- as.data.frame(t(apply(priorities_data,1, function(x) { return(c(x[!is.na(x)],x[is.na(x)]) )} )))
+emptycols <- sapply(priorities_data, function (k) all(is.na(k)))
+priorities_data <- priorities_data[!emptycols]
+
+# Naming columns
+names(priorities_data)[0:ncol(priorities_data)] <-
+  paste("Priority", 0:ncol(priorities_data), sep = "_") # Rename each variable field_stub
+names(priorities_data)[1] <- "obs" # Rename back to obs
+
+
+#####################################################################################
+# Abbreviated dataset containing only evaluated information
+
+evaluated <- c("Yes", "No")
+
+evaluated_data <- lapply(evaluated, function(z) {
+  Filter(function(x)
+    any(x == z), survey_data_cut)
+})
+evaluated_data <- lapply(evaluated_data, cbind, obs = 1:nrow(survey_data_cut))
+evaluated_data <- evaluated_data %>%
+  reduce(left_join, by = "obs")
+evaluated_data <-
+  evaluated_data[!duplicated(as.list(evaluated_data))]
+evaluated_data <- evaluated_data %>%
+  select(obs, everything())  
+shouldChange <- evaluated_data
+shouldChange[,-1] <-
+  sapply(evaluated_data[, -1], function(x)
+    x %nin% evaluated) # Identify cells that need to be made blank
+
+var_list <- names(evaluated_data)
+var_list <- var_list[-1]    # Remove obs from the list
+
+for (val in var_list) {
+  evaluated_data[, val][shouldChange[, val]] <- NA
+}
+
+# Shifting non-NA cells to the left
+evaluated_data <- as.data.frame(t(apply(evaluated_data,1, function(x) { return(c(x[!is.na(x)],x[is.na(x)]) )} )))
+emptycols <- sapply(evaluated_data, function (k) all(is.na(k)))
+evaluated_data <- evaluated_data[!emptycols]
+
+# Naming columns
+names(evaluated_data)[1:2] <- c("obs", "evaluated")
+
+
+
+#######################################################################################
+# Merge dataframes into single cleaned dataframe to be used in dashboard
+
+dataframes <- list(first_answers, field_data, region_data, province_data,
+                   number_data, gender_data, priorities_data, evaluated_data)
+
+dataframes = lapply(dataframes, function(x){
+ x['obs'] = lapply(x['obs'], factor)
+ x
+})
+clean_data <- dataframes %>%
+  reduce(left_join, by = "obs")
+
+
+
+
+#######################################################################################
 
 
 # Define UI for application
