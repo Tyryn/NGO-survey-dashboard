@@ -170,9 +170,9 @@ ui <-
             conditionalPanel(
               condition = "input.ngo_or_donor == 'ngo' && input.country &&
               input.country.indexOf('south_africa') > -1",
-              numericInput("perm_employees", "8. Number of permanent employees", 0, min = 0),
-              numericInput("temp_employees", "9. Number of temporary employees", 0, min = 0),
-              numericInput("volunteers", "10. Number of volunteers", 0, min = 0),
+              numericInput("perm_employees", "8. Number of permanent employees", 0, min = 0, max = 2000),
+              numericInput("temp_employees", "9. Number of temporary employees", 0, min = 0, max = 2000),
+              numericInput("volunteers", "10. Number of volunteers", 0, min = 0, max = 2000),
               sliderInput(
                 "target_age",
                 "11. Targetted age range",
@@ -207,9 +207,9 @@ ui <-
             conditionalPanel(
               condition = "input.ngo_or_donor == 'ngo' && input.country &&
               input.country.indexOf('south_africa') < 0",
-              numericInput("perm_employees", "6. Number of permanent employees", 0, min = 0),
-              numericInput("temp_employees", "7. Number of temporary employees", 0, min = 0),
-              numericInput("volunteers", "8. Number of volunteers", 0, min = 0),
+              numericInput("perm_employees", "6. Number of permanent employees", 0, min = 0, max = 2000),
+              numericInput("temp_employees", "7. Number of temporary employees", 0, min = 0, max = 2000),
+              numericInput("volunteers", "8. Number of volunteers", 0, min = 0, max = 2000),
               sliderInput(
                 "target_age",
                 "9. Targetted age range",
