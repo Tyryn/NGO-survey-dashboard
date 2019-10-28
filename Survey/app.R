@@ -6,7 +6,7 @@
 #     Done
 # 4. Form resets or something when submitted.
 #     Done
-
+# 5. Need to sort out something for when age is inapplicable 
 
 # Survey
 
@@ -270,13 +270,13 @@ server <- function(input, output, session) {
       input$field,
       input$country,
       input$province,
-      input$municipality,
+      paste0("municipality", sep = "_", input$municipality),
       input$perm_employees,
       input$temp_employees,
       input$volunteers,
       input$target_age,
       input$target_gender,
-      input$service,
+      paste0("service", sep = "_", input$service),
       input$priorities,
       input$evaluated,
       Sys.time()
