@@ -5,11 +5,17 @@ library(googlesheets)
 library(tidyverse)
 library(stringr)
 library(shinydashboard)
+library(ggplot2)
+library(tm)
+library(SnowballC)
+library(wordcloud)
+library(RColorBrewer)
+
+
 
 survey_data <-
   gs_key("1bnWcFKSQZo5aMOd_9BdjQIt_W4iMjWvzMODOoepLq6k") %>%
   gs_read(ws = "Survey")
-
 
 # Clean data
 
@@ -601,14 +607,19 @@ clean_data <- dataframes %>%
 
 # For Priorities graph, create dataset that gives the total proportions of each category
 
+priorities_prop <- priorities_data[, -c(1)]
+priorities_prop$all <- ""
+priorities_long <- gather(priorities_prop, all, priorities_prop[, 1:ncol(priorities_prop)]) %>%
+  select(-starts_with("all"))
+names(priorities_long)[1] <- "All priorities"
 
 
+priorities_table <- table(priorities_long)
+priorities_prop <- as.data.frame(prop.table(priorities_table))
 
-
-
-
-
-
+ggplot(priorities_prop, aes(x=priorities_long, y=Freq)) + 
+  geom_bar(stat = "identity", fill = " steelblue") + theme_classic() +
+  geom_text(aes(label=round(Freq, 2)), vjust=1.6, color=" white", size=3.5)
 
 
 
@@ -617,70 +628,104 @@ clean_data <- dataframes %>%
 
 
 #######################################################################################
-
-# Word cloud
-
-
-
-
-
-
 
 
 #######################################################################################
 # Dashboard
 
 
+# Create vector containing all Fields in the dataset
+fields_unique <- as.vector(as.matrix(field_data[, -c(1)]))
+fields <- unique(fields_unique)
+fields <- fields[!is.na(fields)]
+
+
 # Define UI for application
-ui <- fluidPage(
-  fluidRow(box(status = "primary", 
-    checkboxGroupInput("field_of_work", "Field of work", choices =   c(
-      "Advocacy & Awareness" = "advocacy",
-      "Agriculture" = "agriculture",
-      "Business & Economic Policy" = "business",
-      "Child Education" = "child_educ",
-      "Youth Empowerment" = "youth_empowerment",
-      "Citizenship" = "citizenship",
-      "Communication" = "communication",
-      "Conflict Resolution" = "conflict_resolution",
-      "Peace Building" = "peace",
-      "ICT" = "ict",
-      "Culture & Society" = "culture_society",
-      "Democracy & Civic Rights" = "democracy_civic",
-      "Rural Development" = "rural_dev",
-      "Disability & Handicap" = "disability",
-      "Displaced Population & Refugees" = "refugees",
-      "Education" = "education",
-      "Environment" = "environment",
-      "Family Care" = "fam_care",
-      "Women’s Rights" = "womens_rights",
-      "Governance" = "governance",
-      "Health" = "health",
-      "Human Rights" = "human_rights",
-      "Charity/Philanthropy" = "charity",
-      "Labor" = "labor",
-      "Law & Legal Affairs" = "law_legal",
-      "Migrant Workers" = "migrant_workers",
-      "Relief" = "relief",
-      "Reconstruction" = "reconstruction",
-      "Rehabilitation" = "rehabilitation",
-      "Research & Studies" = "research_studies",
-      "Science" = "science",
-      "Social Media" = "social_media",
-      "Technology" = "technology",
-      "Transparency" = "transparency",
-      "Training & Capacity" = "training",
-      "Building" = "building"
-    )
-    )
+
+
+ui <- dashboardPage(
+  dashboardHeader(title = "Name pending"),
+  dashboardSidebar(
+      fluidRow(status = "primary",
+        checkboxGroupInput("field_of_work", "Field of work", choices =  fields,
+                           selected = fields
+        )
+      )
+  ),
+  dashboardBody(column(12, box(title = "Priorities", status = "primary", solidHeader = TRUE,
+                       plotOutput("priorities_plot", width = "100%", height = "400px")
+  ),
+  box(title = "Word cloud of service provided", status = "primary", solidHeader = TRUE,
+      plotOutput("wordcloud", width = "100%", height = "400px")
   )
   )
 )
+)
+
+
+
+
 
 
 # Define server logic
 server <- function(input, output) {
+  
+  # Dataset reactive to checkbox input
+  
+  selectedData <- reactive({
+    selectedData <- clean_data %>%
+      filter_all(any_vars(str_detect(., paste(input$field_of_work, collapse="|"))))
+  })
+  
+  output$priorities_plot <- renderPlot({
+    
+    priorities_prop <- selectedData()[, c(grep("Priority", names(selectedData()))), drop=F]
 
+    priorities_prop$all <- ""
+    priorities_long <- gather(priorities_prop, all, priorities_prop[, 1:ncol(priorities_prop)]) %>%
+      select(-starts_with("all"))
+    names(priorities_long)[1] <- "All priorities"
+
+
+    priorities_table <- table(priorities_long)
+    priorities_prop <- as.data.frame(prop.table(priorities_table))
+
+
+    input$priorities_plot
+    
+    ggplot(priorities_prop, aes(x=priorities_long, y=Freq)) + 
+      geom_bar(stat = "identity", fill = " steelblue") +
+      geom_text(aes(label=round(Freq, 2)), vjust=1.6, color=" white", size=3.5) +
+      scale_x_discrete(labels = function(labels) {
+        sapply(seq_along(labels), function(i) paste0(ifelse(i %% 2==0, '', '\n'), labels[i]))
+      }) + xlab("Priorities") + ylab("Proportion of NGOs that have as priority")
+    
+  })
+  
+  output$wordcloud <- renderPlot({
+    docs <- Corpus(VectorSource(selectedData()$Service))
+    
+    # Cleaning the text
+    docs <- tm_map(docs, content_transformer(tolower))    # To lower case
+   # docs <- tm_map(docs, removeNumber)  # Remove numbers
+    docs <- tm_map(docs, removeWords, stopwords("english")) # Remove common English words
+    docs <- tm_map(docs, removeWords, c("help", "assist"))  # Remove words common and useless words to this context
+    docs <- tm_map(docs, removePunctuation)
+    docs <- tm_map(docs, stripWhitespace)
+    
+    # Build term-document matrix
+    
+    dtm <- TermDocumentMatrix(docs)
+    m <- as.matrix(dtm)
+    v <- sort(rowSums(m), decreasing = TRUE)
+    d <- data.frame(word = names(v), freq=v)
+    head(d,10)
+    
+    # Build word cloud
+    wordcloud(words = d$word, freq = d$freq, min.freq = 1,
+              max.words=200, random.order=FALSE, rot.per=0.35, 
+              colors=brewer.pal(8, "RdBu"))
+  })
 }
 
 # Run the application
