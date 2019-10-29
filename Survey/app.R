@@ -2,11 +2,20 @@
 # 1. Create message that tells user that submission successful.
 #     Done
 # 2. Conditional panel that matches city to province
+#     Done
 # 3. Prevent submission without answering all questions
 #     Done
 # 4. Form resets or something when submitted.
 #     Done
 # 5. Need to sort out something for when age is inapplicable 
+#   Done
+# 6. Need to change survey so that instead of province and city (and age) disappearing, 
+#   the province, city and age widgets cannot be filled conditional on other answers. 
+#   Done
+# 7. Need to prevent na and genders from being filled
+
+
+
 
 # Survey
 
@@ -28,56 +37,59 @@ library(shinyjs)
 sheetkey <- "1bnWcFKSQZo5aMOd_9BdjQIt_W4iMjWvzMODOoepLq6k"
 Data <- gs_key(sheetkey)
 
-city_names <- read_excel("SouthAfricanCities.xls")
+
+## Get separate geo dataframes, separated by province 
+SouthAfricanCities <- read_excel("SouthAfricanCities.xls")
+
 fields <-
   c(
-    "Advocacy & Awareness" = "advocacy",
-    "Agriculture" = "agriculture",
-    "Business & Economic Policy" = "business",
-    "Child Education" = "child_educ",
-    "Youth Empowerment" = "youth_empowerment",
-    " Citizenship" = "citizenship",
-    "Communication" = "communication",
-    "Conflict Resolution" = "conflict_resolution",
-    "Peace Building" = "peace",
-    "ICT" = "ict",
-    "Culture & Society" = "culture_society",
-    "Democracy & Civic Rights" = "democracy_civic",
-    "Rural Development" = "rural_dev",
-    "Disability & Handicap" = "disability",
-    "Displaced Population & Refugees" = "refugees",
-    "Education" = "education",
-    "Environment" = "environment",
-    "Family Care" = "fam_care",
-    "Women’s Rights" = "womens_rights",
-    "Governance" = "governance",
-    "Health" = "health",
-    "Human Rights" = "human_rights",
-    "Charity/Philanthropy" = "charity",
-    "Labor" = "labor",
-    "Law & Legal Affairs" = "law_legal",
-    "Migrant Workers" = "migrant_workers",
-    "Relief" = "relief",
-    "Reconstruction" = "reconstruction",
-    "Rehabilitation" = "rehabilitation",
-    "Research & Studies" = "research_studies",
-    "Science" = "science",
-    "Social Media" = "social_media",
-    "Technology" = "technology",
-    "Transparency" = "transparency",
-    "Training & Capacity" = "training",
-    "Building" = "building"
+    "Advocacy & Awareness",
+    "Agriculture",
+    "Business & Economic Policy",
+    "Child Education",
+    "Youth Empowerment",
+    " Citizenship",
+    "Communication",
+    "Conflict Resolution",
+    "Peace Building",
+    "ICT",
+    "Culture & Society",
+    "Democracy & Civic Rights",
+    "Rural Development",
+    "Disability & Handicap",
+    "Displaced Population & Refugees",
+    "Education",
+    "Environment",
+    "Family Care",
+    "Women’s Rights",
+    "Governance",
+    "Health",
+    "Human Rights",
+    "Charity/Philanthropy",
+    "Labor",
+    "Law & Legal Affairs",
+    "Migrant Workers",
+    "Relief",
+    "Reconstruction",
+    "Rehabilitation",
+    "Research & Studies",
+    "Science",
+    "Social Media",
+    "Technology",
+    "Transparency",
+    "Training & Capacity",
+    "Building"
   )
 
 priorities <-
   c(
-    "Improving our monitoring & evaluation" = "monitoring",
-    "Growing our team" = "team_growth",
-    "Upskilling our team" = "upskilling",
-    "Securing new equipment/venues" = "facilities",
-    "Expanding our organization's scope" = "scope",
-    "Building relationship with funders" = "funders",
-    "Recruiting volunteers" = "volunteers"
+    "Improving our monitoring & evaluation",
+    "Growing our team",
+    "Upskilling our team",
+    "Securing new equipment/venues",
+    "Expanding our organization's scope",
+    "Building relationship with funders",
+    "Recruiting volunteers"
   )
 
 # Javascript code so that page refreshes when submit button is pressed
@@ -121,58 +133,56 @@ ui <-
             )
           ),
           fluidRow(
+            textInput(
+              "website", labelMandatory("4. Organization's website"), "" 
+            )
+          ),
+          fluidRow(
             conditionalPanel(
               condition = "input.ngo_or_donor == 'ngo'",
               selectInput(
                 "field",
-                "4. Field of work",
+                "5. Field of work",
                 choices = c("Select from the list" = "", fields),
                 multiple = TRUE
               )
             )
           ),
           fluidRow(
-            conditionalPanel(
-              condition = "input.ngo_or_donor == 'ngo'",
               checkboxGroupInput(
                 "country",
-                "5. Regions of operation",
+                "6. Regions of operation",
                 choices = c(
-                  "South Africa" = "south_africa",
-                  "Southern Africa" = "southern_africa",
-                  "Rest of world" = "row"
+                  "South Africa",
+                  "Southern Africa",
+                  "Rest of world"
                 ),
-                selected = "south_africa"
+                selected = "South Africa"
               )
-            )
-          ),
-          fluidRow(
-            conditionalPanel(
-              condition = "input.ngo_or_donor == 'ngo' && input.country &&
-              input.country.indexOf('south_africa') > -1",
+            ),
               ## Necessary javascript expression
               selectInput(
                 "province",
-                "6. South African provinces where your organization operates",
+                "6a. South African provinces where your organization operates",
                 c("Select provinces of operation" = "",
-                  city_names$ProvinceName),
+                  SouthAfricanCities$ProvinceName),
                 multiple = TRUE
               ),
               selectInput(
                 "municipality",
-                "7. (Nearest) South African village, town, or city where your organization operates",
-                c("Select places of operation" = "", city_names$AccentCity),
+                "6b. (Nearest) South African village, town, or city where your organization operates",
+                c("Select places of operation" = "", SouthAfricanCities$AccentCity),
                 multiple = TRUE
-              )
-            )
           ),
           fluidRow(
-            conditionalPanel(
-              condition = "input.ngo_or_donor == 'ngo' && input.country &&
-              input.country.indexOf('south_africa') > -1",
-              numericInput("perm_employees", "8. Number of permanent employees", 0, min = 0, max = 2000),
-              numericInput("temp_employees", "9. Number of temporary employees", 0, min = 0, max = 2000),
-              numericInput("volunteers", "10. Number of volunteers", 0, min = 0, max = 2000),
+              numericInput("perm_employees", "7. Number of permanent employees", 0, min = 0, max = 2000),
+              numericInput("temp_employees", "8. Number of temporary employees", 0, min = 0, max = 2000),
+              numericInput("volunteers", "9. Number of volunteers", 0, min = 0, max = 2000),
+              checkboxGroupInput(
+                "target_gender",
+                "10. Targetted gender(s)",
+                choices = c("Male" = "male", "Female" = "female", "Not applicable" = "na")
+              ),
               sliderInput(
                 "target_age",
                 "11. Targetted age range",
@@ -180,93 +190,72 @@ ui <-
                 max = 100,
                 value = c(0, 20)
               ),
-              selectInput(
-                "target_gender",
-                "12. Targetted gender",
-                choices = c("Male" = "male", "Female" = "female", "Not applicable" = "na"),
-                multiple = TRUE
-              ),
               textInput(
                 "service",
-                "13. Please provide a description of what your organization does"
+                "12. Please provide a description of what your organization does"
               ),
               selectInput(
                 "priorities",
-                "14. Next year, we are prioritising:",
+                "13. Next year, your organization is prioritising:",
                 choices = c("Select from the list" = "", priorities),
                 multiple = TRUE
               ),
               radioButtons(
                 "evaluated",
-                "15. Has your organization ever been evaluated?",
-                choices = c("Yes", "No")
-              )
-            )
-          ),
-          fluidRow(
-            conditionalPanel(
-              condition = "input.ngo_or_donor == 'ngo' && input.country &&
-              input.country.indexOf('south_africa') < 0",
-              numericInput("perm_employees", "6. Number of permanent employees", 0, min = 0, max = 2000),
-              numericInput("temp_employees", "7. Number of temporary employees", 0, min = 0, max = 2000),
-              numericInput("volunteers", "8. Number of volunteers", 0, min = 0, max = 2000),
-              sliderInput(
-                "target_age",
-                "9. Targetted age range",
-                min = 0,
-                max = 100,
-                value = c(0, 20)
-              ),
-              selectInput(
-                "target_gender",
-                "10. Targetted gender",
-                choices = c("Male" = "male", "Female" = "female", "Not applicable" = "na"),
-                multiple = TRUE
-              ),
-              textInput(
-                "service",
-                "11. Please provide a description of what your organization does"
-              ),
-              selectInput(
-                "priorities",
-                "12. Next year, we are prioritising:",
-                choices = c("Select from the list:", priorities),
-                multiple = TRUE
-              ),
-              radioButtons(
-                "evaluated",
-                "13. Has your organization ever been evaluated?",
+                "14. Has your organization ever been evaluated?",
                 choices = c("Yes", "No")
               )
             )
           )
-      )
-      )),
-      fluidRow(
-        useShinyjs(),
-        extendShinyjs(text = jscode),
-        column(
-          4,
-          offset = 3,
-          actionButton("submit", "Submit", class = "btn-primary")
-        ),
-        column(4, img(
-          src = 'firdale_logo.png',
-          height = '100px',
-          width = '100px'
-        ))
-      )
   ))
+)
+),
+fluidRow(
+  useShinyjs(),
+  extendShinyjs(text = jscode),
+  column(
+    4,
+    offset = 3,
+    actionButton("submit", "Submit", class = "btn-primary")
+  ),
+  column(4, img(
+    src = 'firdale_logo.png',
+    height = '100px',
+    width = '100px'
+  ))
+)
   )
-
 
 # Server
 server <- function(input, output, session) {
+  observeEvent(input$province, {      ## Update possible towns depending on province selected 
+    updateSelectInput(session,
+                      'municipality',
+                      choices = unique(SouthAfricanCities$AccentCity[SouthAfricanCities$ProvinceName ==
+                                                                       input$province]))
+  })
+  # observeEvent(input$target_gender=="na", {
+  #   updateCheckboxGroupInput(session, "target_gender",
+  #                            selected = )
+  #   
+  # })
+  # 
+  
+  
+  observe({
+    shinyjs::toggleState("province", input$country == "South Africa")
+    shinyjs::toggleState("municipality", input$country == "South Africa")
+  })
+  observe({
+    shinyjs::toggleState("target_age", input$target_gender == "male" || input$target_gender == "female")
+  })
+  
   results <- reactive(
     c(
       input$ngo_or_donor,
       input$name,
       input$established,
+      input$website,
       input$field,
       input$country,
       input$province,
@@ -274,7 +263,7 @@ server <- function(input, output, session) {
       input$perm_employees,
       input$temp_employees,
       input$volunteers,
-      input$target_age,
+      paste0("age", sep = "_", input$target_age),
       input$target_gender,
       paste0("service", sep = "_", input$service),
       input$priorities,
