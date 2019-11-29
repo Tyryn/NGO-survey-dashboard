@@ -18,10 +18,10 @@ survey_data <-
   gs_read(ws = "Survey")
 
 ## Get separate geo dataframes, separated by province
-SouthAfricanCities <- read_excel("SouthAfricanCities.xls")
+SouthAfricanCities <- read_excel("~/Firdale Consulting/NGO-survey-dashboard/Dashboard/SouthAfricanCities.xls")
 
 # Create function for "not in"
-`%nin%` = Negate(`%in%`)  
+`%nin%` = Negate(`%in%`)
 
 
 myfunc <- function(v1) {
@@ -36,7 +36,7 @@ myfunc <- function(v1) {
 number_data_vector <-
   as.character(seq(from = 0, to = 2000)) # Setting limit to 2000
 survey_data_cut <-
-  survey_data[, -c(1:5)] # Done to prevent year or name fields being counted
+  survey_data[,-c(1:5)] # Done to prevent year or name fields being counted
 
 ###################################################################################
 # Abbreviated dataset that is the first four variables (they always fill the same cells)
@@ -98,7 +98,8 @@ field_data <- lapply(field_data_vector, function(z) {
 })
 
 # Region of operation
-region_data_vector <- c("South Africa", "Southern Africa", "Rest of world")
+region_data_vector <-
+  c("South Africa", "Southern Africa", "Rest of world")
 region_data <- lapply(region_data_vector, function(z) {
   Filter(function(x)
     any(x == z), survey_data)
@@ -191,12 +192,33 @@ evaluated_data <- lapply(evaluated_data_vector, function(z) {
 })
 
 
-#### Now looping 
-dataList <- list(field_data, region_data, province_data, municipality_data, number_data, age_data,
-                 gender_data, service_data, priorities_data, evaluated_data)
-vectorList <- list(field_data_vector, region_data_vector, province_data_vector,
-                   municipality_data_vector, number_data_vector, age_data_vector,
-                   gender_data_vector, service_data_vector, priorities_data_vector, evaluated_data_vector)
+#### Now looping
+dataList <-
+  list(
+    field_data,
+    region_data,
+    province_data,
+    municipality_data,
+    number_data,
+    age_data,
+    gender_data,
+    service_data,
+    priorities_data,
+    evaluated_data
+  )
+vectorList <-
+  list(
+    field_data_vector,
+    region_data_vector,
+    province_data_vector,
+    municipality_data_vector,
+    number_data_vector,
+    age_data_vector,
+    gender_data_vector,
+    service_data_vector,
+    priorities_data_vector,
+    evaluated_data_vector
+  )
 
 
 list <- mapply(function(z, y) {
@@ -212,8 +234,8 @@ list <- mapply(function(z, y) {
     select(obs, everything())
   
   shouldChange <- z
-  shouldChange[,-1] <-
-    sapply(z[, -1], function(x)
+  shouldChange[, -1] <-
+    sapply(z[,-1], function(x)
       x %nin% y) # Identify cells that need to be made blank
   
   var_list <- names(z)
@@ -332,12 +354,84 @@ clean_data <- dataframes %>%
   reduce(left_join, by = "obs")
 
 
+###################################################################################
+# Merge in coordinates of place names
+
+# Clean SA data so it is only Accent city and coordinates
+sa_data <- SouthAfricanCities[, c(2, 4, 5)]
+
+municipalities <- clean_data %>%
+  select(Municipality_1:perm_emp)
+
+municipalities <- municipalities[1:(length(municipalities)-1)]
+
+for (i in seq(municipalities)) {
+  assign(paste0("municipalities_", i), municipalities[, i])
+}
+
+municipList <- lapply(ls(pattern = "municipalities_"), function(x) get(x)) 
+
+obs <- 1:nrow(municipalities)
+municipCoord <- lapply(municipList, function(x) cbind(x, obs))
+
+municipCoord <- lapply(municipCoord, function(x) {
+  merge(x, sa_data, by.x = 1, by.y = 1, all.x = TRUE)
+})
+
+
+# Need to sort duplicate towns. FOR NOW JUST RANDOMLY DELETING A DUPLICATE :/
+# province_merged <- lapply(municipCoord, function(x) {
+#   merge(x, province_data, by="obs")
+# })
+
+
+cols <- as.list(as.character(1:ncol(municipalities)))
+
+dfs <- Map(function(x, n) setNames(x, c(names(x)[c(1,2)], c(paste0("Latitude_", n),
+                                                               paste0("Longitude_", n)))),
+                    municipCoord, cols)
+
+municipCoord <- dfs %>%
+  reduce(merge, by = "obs")
+
+municipCoord <- distinct(municipCoord, obs, .keep_all = TRUE)   # Just randomly deleting duplicates
+
+municipalities_colnames <- colnames(municipalities)
+
+# Merge back into clean dataset with coordinates
+clean_data <- clean_data[, -which(names(clean_data) %in% municipalities_colnames)] 
+clean_data <- merge(clean_data, municipCoord, by = "obs", .keep_all=TRUE)
+
+
+#### Reshape data long
+## Slice into x number of dataframes that will be renamed then appended
+colnames <- c("obs", "Municipality", "Latitude", "Longitude")
+
+splitMunicip <- municipCoord[, grepl("Municipality", names(municipCoord))]
+numMunicip <- c(1:ncol(splitMunicip)) %>%
+  as.character()
+
+splitMunicip <- lapply(numMunicip, function(x) {
+  municipCoord[c(1, grep(x, colnames(municipCoord)))]
+})
+splitMunicip <- lapply(splitMunicip, setNames, colnames)
+
+coordDF <- bind_rows(splitMunicip)
+coordDF <-  coordDF[rowSums(is.na(coordDF)) == 0,]     # Remove empty rows
+
+
+### Merge with data
+info_data <- clean_data[, c(1, 3:5)]
+
+coordDF <- merge(coordDF, info_data)
+
+
 
 #######################################################################################
 
 # For Priorities graph, create dataset that gives the total proportions of each category
 
-priorities_prop <- priorities_data[,-c(1)]
+priorities_prop <- priorities_data[, -c(1)]
 priorities_prop$all <- ""
 priorities_long <-
   gather(priorities_prop, all, priorities_prop[, 1:ncol(priorities_prop)]) %>%
@@ -369,7 +463,7 @@ ggplot(priorities_prop, aes(x = priorities_long, y = Freq)) +
 
 
 # Create vector containing all Fields in the dataset
-fields_unique <- as.vector(as.matrix(field_data[,-c(1)]))
+fields_unique <- as.vector(as.matrix(field_data[, -c(1)]))
 fields <- unique(fields_unique)
 fields <- fields[!is.na(fields)]
 
@@ -388,8 +482,13 @@ ui <- dashboardPage(
       selected = fields
     )
   )),
-  dashboardBody(column(
-    12,
+  dashboardBody(fluidRow(
+      title = "Map",
+      status = "primary",
+      solidHeader = TRUE,
+      leafletOutput(outputId = "map")
+  ), 
+    fluidRow(
     box(
       title = "Priorities",
       status = "primary",
@@ -419,6 +518,14 @@ server <- function(input, output) {
       filter_all(any_vars(str_detect(
         ., paste(input$field_of_work, collapse = "|")
       )))
+  })
+  
+  
+  output$map <- renderLeaflet({
+    leaflet() %>%
+      addTiles() %>%
+      addMarkers(lng = as.numeric(coordDF$Longitude), lat = as.numeric(coordDF$Latitude), 
+                 popup = c(coordDF$name))
   })
   
   output$priorities_plot <- renderPlot({
@@ -451,7 +558,7 @@ server <- function(input, output) {
           sapply(seq_along(labels), function(i)
             paste0(ifelse(i %% 2 == 0, '', '\n'), labels[i]))
         }
-      ) + xlab("Priorities") + ylab("Proportion of NGOs that have as priority")
+      ) + xlab("Priorities") + ylab("Proportion of NGOs that have as a priority")
     
   })
   
