@@ -147,83 +147,115 @@ ui <-
                             )
                           ),
                           fluidRow(
-                            checkboxGroupInput(
-                              "country",
-                              "6. Regions of operation",
-                              choices = c("South Africa",
-                                          "Southern Africa",
-                                          "Rest of world"),
-                              selected = "South Africa"
+                            conditionalPanel(
+                              condition = "input.ngo_or_donor == 'ngo'",
+                              checkboxGroupInput(
+                                "country",
+                                "6. Regions of operation",
+                                choices = c("South Africa",
+                                            "Southern Africa",
+                                            "Rest of world"),
+                                selected = "South Africa"
+                              )
                             )
                           ),
-                          ## Necessary javascript expression
-                          selectInput(
-                            "province",
-                            "6a. South African provinces where your organization operates",
-                            c(
-                              "Select provinces of operation" = "",
-                              SouthAfricanCities$ProvinceName
-                            ),
-                            multiple = TRUE
+                          conditionalPanel(
+                            condition = "input.ngo_or_donor == 'ngo'",
+                            selectInput(
+                              "province",
+                              "6a. South African provinces where your organization operates",
+                              c(
+                                "Select provinces of operation" = "",
+                                SouthAfricanCities$ProvinceName
+                              ),
+                              multiple = TRUE
+                            )
                           ),
-                          selectInput(
-                            "municipality",
-                            "6b. (Nearest) South African village, town, or city where your organization operates",
-                            c("Select places of operation" = "", SouthAfricanCities$AccentCity),
-                            multiple = TRUE
+                          conditionalPanel(
+                            condition = "input.ngo_or_donor == 'ngo'",
+                            selectInput(
+                              "municipality",
+                              "6b. (Nearest) South African village, town, or city where your organization operates",
+                              c("Select places of operation" = "", SouthAfricanCities$AccentCity),
+                              multiple = TRUE
+                            )
                           ),
                           fluidRow(
-                            numericInput(
-                              "perm_employees",
-                              "7. Number of permanent employees",
-                              0,
-                              min = 0,
-                              max = 2000
-                            ),
-                            numericInput(
-                              "temp_employees",
-                              "8. Number of temporary employees",
-                              0,
-                              min = 0,
-                              max = 2000
-                            ),
-                            numericInput(
-                              "volunteers",
-                              "9. Number of volunteers",
-                              0,
-                              min = 0,
-                              max = 2000
-                            ),
-                            checkboxGroupInput(
-                              "target_gender",
-                              "10. Targetted gender(s)",
-                              choices = c(
-                                "Male" = "male",
-                                "Female" = "female",
-                                "Not applicable" = "na"
+                            conditionalPanel(
+                              condition = "input.ngo_or_donor == 'ngo'",
+                              numericInput(
+                                "perm_employees",
+                                "7. Number of permanent employees",
+                                0,
+                                min = 0,
+                                max = 2000
                               )
                             ),
-                            sliderInput(
-                              "target_age",
-                              "11. Targetted age range",
-                              min = 0,
-                              max = 100,
-                              value = c(0, 20)
+                            conditionalPanel(
+                              condition = "input.ngo_or_donor == 'ngo'",
+                              numericInput(
+                                "temp_employees",
+                                "8. Number of temporary employees",
+                                0,
+                                min = 0,
+                                max = 2000
+                              )
                             ),
-                            textInput(
-                              "service",
-                              "12. Please provide a description of what your organization does"
+                            conditionalPanel(
+                              condition = "input.ngo_or_donor == 'ngo'",
+                              numericInput(
+                                "volunteers",
+                                "9. Number of volunteers",
+                                0,
+                                min = 0,
+                                max = 2000
+                              )
                             ),
-                            selectInput(
-                              "priorities",
-                              "13. Next year, your organization is prioritising:",
-                              choices = c("Select from the list" = "", priorities),
-                              multiple = TRUE
+                            conditionalPanel(
+                              condition = "input.ngo_or_donor == 'ngo'",
+                              checkboxGroupInput(
+                                "target_gender",
+                                "10. Targetted gender(s)",
+                                choices = c(
+                                  "Male" = "male",
+                                  "Female" = "female",
+                                  "Not applicable" = "na"
+                                )
+                              )
                             ),
-                            radioButtons(
-                              "evaluated",
-                              "14. Has your organization ever been evaluated?",
-                              choices = c("Yes", "No")
+                            conditionalPanel(
+                              condition = "input.ngo_or_donor == 'ngo'",
+                              sliderInput(
+                                "target_age",
+                                "11. Targetted age range",
+                                min = 0,
+                                max = 100,
+                                value = c(0, 20)
+                              )
+                            ),
+                            conditionalPanel(
+                              condition = "input.ngo_or_donor == 'ngo'",
+                              textInput(
+                                "service",
+                                "12. Please provide a description of what your organization does"
+                              )
+                            ),
+                            conditionalPanel(
+                              condition = "input.ngo_or_donor == 'ngo'",
+                              selectInput(
+                                "priorities",
+                                "13. Next year, your organization is prioritising:",
+                                choices = c("Select from the list" = "", priorities),
+                                multiple = TRUE
+                              )
+                            ),
+                            conditionalPanel(
+                              condition = "input.ngo_or_donor == 'ngo'",
+                              radioButtons(
+                                "evaluated",
+                                "14. Has your organization ever been evaluated?",
+                                choices = c("Yes", "No")
+                              )
                             )
                           )
                         )
@@ -268,7 +300,8 @@ server <- function(input, output, session) {
   })
   observe({
     shinyjs::toggleState("target_age",
-                         input$target_gender == "male" || input$target_gender == "female")
+                         input$target_gender == "male" ||
+                           input$target_gender == "female")
   })
   
   results <- reactive(

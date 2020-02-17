@@ -12,6 +12,9 @@ library(wordcloud)
 library(RColorBrewer)
 library(leaflet)
 library(readxl)
+library(reshape)
+library(scales)
+library(timevis)
 
 survey_data <-
   gs_key("1bnWcFKSQZo5aMOd_9BdjQIt_W4iMjWvzMODOoepLq6k") %>%
@@ -41,7 +44,8 @@ survey_data_cut <-
 ###################################################################################
 # Abbreviated dataset that is the first four variables (they always fill the same cells)
 first_answers <- survey_data[, 1:4]
-first_answers$obs <- 1:nrow(survey_data)
+first_answers$obs <- as.character(1:nrow(survey_data))
+#first_answers$obs <- paste("", first_answers$obs)
 first_answers <- first_answers %>%
   select(obs, everything())
 names(first_answers) <-
@@ -346,10 +350,17 @@ dataframes <-
     evaluated_data
   )
 
-dataframes = lapply(dataframes, function(x) {
-  x['obs'] = lapply(x['obs'], factor)
+dataframes <- lapply(dataframes, function(x) {
+  x['obs'] = lapply(x['obs'], as.character)
+  x                                         # The return is required otherwise it just return the new vector.
+})
+
+# Remove whitespace before obs - dataframes after 'first_answers' weirdly have that
+dataframes <- lapply(dataframes, function(x) {
+  x$obs <- gsub('\\s+', '', x$obs)
   x
 })
+
 clean_data <- dataframes %>%
   reduce(left_join, by = "obs")
 
@@ -419,41 +430,91 @@ splitMunicip <- lapply(splitMunicip, setNames, colnames)
 coordDF <- bind_rows(splitMunicip)
 coordDF <-  coordDF[rowSums(is.na(coordDF)) == 0,]     # Remove empty rows
 
-
-### Merge with data
-info_data <- clean_data[, c(1, 3:5)]
-
-coordDF <- merge(coordDF, info_data)
-
-
-
 #######################################################################################
 
 # For Priorities graph, create dataset that gives the total proportions of each category
 
-priorities_prop <- priorities_data[, -c(1)]
-priorities_prop$all <- ""
-priorities_long <-
-  gather(priorities_prop, all, priorities_prop[, 1:ncol(priorities_prop)]) %>%
-  select(-starts_with("all"))
-names(priorities_long)[1] <- "All priorities"
+# priorities_data <- clean_data
+# 
+# 
+# priorities_long <- melt(priorities_data, id="obs")
+# priorities_long <- na.omit(priorities_long) %>%
+#   dplyr::rename(., `All priorities` = value) %>%
+#   select(3)
+# 
+# priorities_table <- table(priorities_long)
+# priorities_prop <- as.data.frame(prop.table(priorities_table))
+# 
+# 
+# x <- ggplot(priorities_prop, aes(x = priorities_long, y = Freq)) +
+#   geom_bar(stat = "identity", fill = " steelblue") + theme_classic() +
+#   geom_text(aes(label = round(Freq, 2)),
+#             vjust = 1.6,
+#             color = " white",
+#             size = 3.5)
+# x
 
-
-priorities_table <- table(priorities_long)
-priorities_prop <- as.data.frame(prop.table(priorities_table))
-
-ggplot(priorities_prop, aes(x = priorities_long, y = Freq)) +
-  geom_bar(stat = "identity", fill = " steelblue") + theme_classic() +
-  geom_text(aes(label = round(Freq, 2)),
-            vjust = 1.6,
-            color = " white",
-            size = 3.5)
-
-
-
-
-
-
+#######################################################################################
+# Timeline data preparation
+# 
+# # Create new dataframe
+# time_df <- clean_data
+# 
+# # Create new date variable
+# time_df$established_1 <- as.Date(ISOdate(time_df$established, 1, 1))
+# 
+# ## To distinguish between NGOs and Donors
+# status_levels <- c("ngo", "donor")
+# status_colors <- c("#0070C0", "#00B050")
+# 
+# time_df$status <- factor(time_df$ngo_or_donor, levels=status_levels, ordered=TRUE)
+# 
+# ## This is for positioning the vertical lines
+# positions <- c(0.5, -0.5, 1.0, -1.0, 1.5, -1.5)
+# directions <- c(1, -1)
+# 
+# line_pos <- data.frame(
+#   "established"=unique(time_df$established),
+#   "position"=rep(positions, length.out=length(unique(time_df$established))),
+#   "direction"=rep(directions, length.out=length(unique(time_df$established)))
+# )
+# 
+# time_df <- merge(x=time_df, y=line_pos, by="established", all = TRUE)
+# timeline_df <- time_df[with(time_df, order(established, status)),]
+# 
+# ## This is to offset the lollipops for orgs that are established on the same month
+# text_offset <- 0.05
+# time_df$year_count <- ave(time_df$established==time_df$established, time_df$established, FUN = cumsum)
+# time_df$text_position <- (time_df$month_count * text_offset * time_df$direction) + time_df$position
+# 
+# ## This is to create a buffer two years on either side of the earliest and most recently established orgs
+# year_buffer <- 2
+# year_date_range <- seq(min(time_df$established) - year_buffer, max(time_df$established) + year_buffer, by=1)
+# 
+# year_df <- data.frame(year_date_range)
+# 
+# #### Create plot
+# 
+# timeline_plot <- ggplot(time_df, aes(x=established,y=0, col=status, label=name))
+# 
+# timeline_plot<-timeline_plot+labs(col="NGO or Donor")
+# 
+# timeline_plot<-timeline_plot+scale_color_manual(values=status_colors, labels=status_levels, drop = FALSE)
+# 
+# timeline_plot<-timeline_plot+theme_classic()
+# 
+# timeline_plot <- timeline_plot+geom_hline(yintercept=0, 
+#                                           color = "black", size=0.3)
+# 
+# # Plot vertical segment lines for milestones
+# 
+# timeline_plot<-timeline_plot+geom_segment(data=time_df[time_df$year_count == 1,], aes(y=position,yend=0,xend=established, color='black', size=0.2))
+# 
+# 
+# 
+# 
+# 
+# timeline_plot
 
 #######################################################################################
 
@@ -482,12 +543,12 @@ ui <- dashboardPage(
       selected = fields
     )
   )),
-  dashboardBody(fluidRow(
+  dashboardBody(fluidRow(box(width = 12,
       title = "Map",
       status = "primary",
       solidHeader = TRUE,
       leafletOutput(outputId = "map")
-  ), 
+  )), 
     fluidRow(
     box(
       title = "Priorities",
@@ -500,7 +561,12 @@ ui <- dashboardPage(
       status = "primary",
       solidHeader = TRUE,
       plotOutput("wordcloud", width = "100%", height = "400px")
-    )
+    ),
+    box(width = 12,
+        title = "Timeline",
+        status = "primary",
+        solidHeader = TRUE,
+        timevisOutput("timeline"))
   ))
 )
 
@@ -520,48 +586,67 @@ server <- function(input, output) {
       )))
   })
   
+  # Map
+  info_data <- reactive({
+    selectedData()[, c(1, 3:5)]
+  })
   
+  coordDF_1 <- reactive({
+    merge(coordDF, info_data())
+  })
+  
+  info <- reactive({
+    paste(sep = "<br/>",
+                paste0("<b><a href='",coordDF_1()$website, "'>", coordDF_1()$name, "</a></b>"),
+                paste("Est.", coordDF_1()$established)
+)
+  })
+
   output$map <- renderLeaflet({
     leaflet() %>%
       addTiles() %>%
-      addMarkers(lng = as.numeric(coordDF$Longitude), lat = as.numeric(coordDF$Latitude), 
-                 popup = c(coordDF$name))
+      addMarkers(lng = as.numeric(coordDF_1()$Longitude), lat = as.numeric(coordDF_1()$Latitude), 
+                 popup = info())
   })
   
+  # Histogram
   output$priorities_plot <- renderPlot({
-    priorities_prop <-
-      selectedData()[, c(grep("Priority", names(selectedData()))), drop = F]
+    priorities_prop <- selectedData()[, c(grep("Priority|obs", names(selectedData()))), drop = F]
     
-    priorities_prop$all <- ""
-    priorities_long <-
-      gather(priorities_prop, all, priorities_prop[, 1:ncol(priorities_prop)]) %>%
-      select(-starts_with("all"))
-    names(priorities_long)[1] <- "All priorities"
+    priorities_long <- melt(priorities_prop, id="obs")
+    priorities_long <- na.omit(priorities_long) %>%
+      dplyr::rename(., `All priorities` = value) %>%
+      select(3) 
     
+    max_prop <- max(priorities_prop$Freq*100)
+    max_prop <- round(max_prop+30, -1)
     
-    priorities_table <- table(priorities_long)
-    priorities_prop <- as.data.frame(prop.table(priorities_table))
+    priorities_prop <- priorities_long %>%
+      group_by(`All priorities`) %>%
+      summarize(count = n()) %>%
+      mutate(pct = round(((count/sum(count))*100)),1)
     
+    max_prop <- max(priorities_prop$pct)
+    max_prop <- round(max_prop+20, -1)
     
-    input$priorities_plot
-    
-    ggplot(priorities_prop, aes(x = priorities_long, y = Freq)) +
-      geom_bar(stat = "identity", fill = " steelblue") +
-      geom_text(
-        aes(label = round(Freq, 2)),
-        vjust = 1.6,
-        color = " white",
-        size = 3.5
-      ) +
+    priorities_plot <- ggplot(priorities_prop, aes(`All priorities`, pct)) + geom_bar(stat = 'identity', fill="darkblue") +
+      scale_y_continuous("Proportion of NGOs that have as a priority (%)", limits = c(0,max_prop)) + 
       scale_x_discrete(
         labels = function(labels) {
           sapply(seq_along(labels), function(i)
             paste0(ifelse(i %% 2 == 0, '', '\n'), labels[i]))
-        }
-      ) + xlab("Priorities") + ylab("Proportion of NGOs that have as a priority")
-    
+        }) +
+      geom_text(
+        aes(label = paste0(pct, "%")),
+        vjust = 1.6,
+        color = "white",
+        size = 3.5
+      ) + xlab("Priorities")
+    priorities_plot
   })
   
+  
+  # Wordcloud
   output$wordcloud <- renderPlot({
     docs <- Corpus(VectorSource(selectedData()$Service))
     
@@ -594,6 +679,15 @@ server <- function(input, output) {
       rot.per = 0.35,
       colors = brewer.pal(8, "RdBu")
     )
+  })
+  
+  # Timeline
+  output$timeline <- renderTimevis({
+    time_df <- select(selectedData(), name, established) %>%
+      dplyr::rename(content=name, start=established)
+    timeline <- timevis(time_df)
+    timeline
+    
   })
 }
 
