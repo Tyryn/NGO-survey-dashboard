@@ -1,5 +1,8 @@
 # Dashboard
 
+## Remember to remove province bits
+
+
 library(shiny)
 library(googlesheets)
 library(tidyverse)
@@ -16,12 +19,18 @@ library(reshape)
 library(scales)
 library(timevis)
 
+library(sf)
+library(dplyr)
+
+
+
 survey_data <-
   gs_key("1bnWcFKSQZo5aMOd_9BdjQIt_W4iMjWvzMODOoepLq6k") %>%
   gs_read(ws = "Survey")
 
 ## Get separate geo dataframes, separated by province
-SouthAfricanCities <- read_excel("~/Firdale Consulting/NGO-survey-dashboard/Dashboard/SouthAfricanCities.xls")
+SouthAfricanCities <-
+  read_excel("~/Firdale Consulting/NGO-survey-dashboard/Dashboard/SouthAfricanCities.xls")
 
 # Create function for "not in"
 `%nin%` = Negate(`%in%`)
@@ -32,7 +41,7 @@ myfunc <- function(v1) {
 }
 
 
-# Clean data
+# Clean data ####
 
 # Break up questions with multiple possible answers into chunk and then merge again
 # Each question gets its own column, answers comma separated
@@ -41,8 +50,8 @@ number_data_vector <-
 survey_data_cut <-
   survey_data[,-c(1:5)] # Done to prevent year or name fields being counted
 
-###################################################################################
-# Abbreviated dataset that is the first four variables (they always fill the same cells)
+
+# Abbreviated dataset that is the first four variables (they always fill the same cells) ####
 first_answers <- survey_data[, 1:4]
 first_answers$obs <- as.character(1:nrow(survey_data))
 #first_answers$obs <- paste("", first_answers$obs)
@@ -52,54 +61,47 @@ names(first_answers) <-
   c("obs", "ngo_or_donor", "name", "established", "website")
 
 
-###################################################################################
-# First part of abbreviating datasets
-##################################################################################
+#
+# First part of abbreviating datasets ####
+#
 # Field of operation
 field_data_vector <-
   c(
     "Advocacy & Awareness",
-    "Agriculture",
-    "Business & Economic Policy",
-    "Child Education",
-    "Youth Empowerment",
-    " Citizenship",
-    "Communication",
-    "Conflict Resolution",
-    "Peace Building",
-    "ICT",
     "Culture & Society",
     "Democracy & Civic Rights",
-    "Rural Development",
     "Disability & Handicap",
     "Displaced Population & Refugees",
     "Education",
     "Environment",
     "Family Care",
-    "Women’s Rights",
-    "Governance",
     "Health",
     "Human Rights",
-    "Charity/Philanthropy",
     "Labor",
     "Law & Legal Affairs",
-    "Migrant Workers",
-    "Relief",
-    "Reconstruction",
-    "Rehabilitation",
-    "Research & Studies",
-    "Science",
-    "Social Media",
-    "Technology",
-    "Transparency",
-    "Training & Capacity",
-    "Building"
+    "Rural Development",
+    "Science & Technology",
+    "Youth Empowerment",
+    "Other"
   )
 
 field_data <- lapply(field_data_vector, function(z) {
   Filter(function(x)
     any(x == z), survey_data)
 })
+
+# Description of organisations falling under "other"
+other_description <-
+  sapply(survey_data_cut, function(x)
+    grep("other_description", x, value = TRUE))
+other_description_data_vector <-
+  unlist(other_description, use.names = FALSE)
+
+other_description_data <-
+  lapply(other_description_data_vector, function(z) {
+    Filter(function(x)
+      any(x == z), survey_data)
+  })
 
 # Region of operation
 region_data_vector <-
@@ -109,23 +111,23 @@ region_data <- lapply(region_data_vector, function(z) {
     any(x == z), survey_data)
 })
 
-# Province of operation
-province_data_vector <-
-  c(
-    "Western Cape",
-    "Northern Cape",
-    "Eastern Cape",
-    "Free State",
-    "North West",
-    "KwaZulu Natal",
-    "Gauteng",
-    "Limpopo",
-    "Mpumalanga"
-  )
-province_data <- lapply(province_data_vector, function(z) {
-  Filter(function(x)
-    any(x == z), survey_data)
-})
+# # Province of operation
+# province_data_vector <-
+#   c(
+#     "Western Cape",
+#     "Northern Cape",
+#     "Eastern Cape",
+#     "Free State",
+#     "North West",
+#     "KwaZulu Natal",
+#     "Gauteng",
+#     "Limpopo",
+#     "Mpumalanga"
+#   )
+# province_data <- lapply(province_data_vector, function(z) {
+#   Filter(function(x)
+#     any(x == z), survey_data)
+# })
 
 # City/municipality of operation
 municipality <-
@@ -138,28 +140,28 @@ municipality_data <- lapply(municipality_data_vector, function(z) {
     any(x == z), survey_data)
 })
 
-# Numbers data (Employees and volunteers)
-number_data <- lapply(number_data_vector, function(z) {
-  Filter(function(x)
-    any(x == z), survey_data_cut)
-})
+# # Numbers data (Employees and volunteers)
+# number_data <- lapply(number_data_vector, function(z) {
+#   Filter(function(x)
+#     any(x == z), survey_data_cut)
+# })
 
-# Age data
-age <-
-  sapply(survey_data_cut, function(x)
-    grep("age_", x, value = TRUE))
-age_data_vector <- unlist(age, use.names = FALSE)
-age_data <- lapply(age_data_vector, function(z) {
-  Filter(function(x)
-    any(x == z), survey_data)
-})
+# # Age data
+# age <-
+#   sapply(survey_data_cut, function(x)
+#     grep("age_", x, value = TRUE))
+# age_data_vector <- unlist(age, use.names = FALSE)
+# age_data <- lapply(age_data_vector, function(z) {
+#   Filter(function(x)
+#     any(x == z), survey_data)
+# })
 
-# Gender data
-gender_data_vector <- c("male", "female", "na")
-gender_data <- lapply(gender_data_vector, function(z) {
-  Filter(function(x)
-    any(x == z), survey_data_cut)
-})
+# # Gender data
+# gender_data_vector <- c("male", "female", "na")
+# gender_data <- lapply(gender_data_vector, function(z) {
+#   Filter(function(x)
+#     any(x == z), survey_data_cut)
+# })
 
 # Service data
 service <-
@@ -188,47 +190,58 @@ priorities_data <- lapply(priorities_data_vector, function(z) {
     any(x == z), survey_data_cut)
 })
 
-# Whether been evaluated data
-evaluated_data_vector <- c("Yes", "No")
+# M&E data
+evaluated_data_vector <- c("Agree", "Neutral", "Disagree")
 evaluated_data <- lapply(evaluated_data_vector, function(z) {
   Filter(function(x)
     any(x == z), survey_data_cut)
 })
+pain <-
+  sapply(survey_data_cut, function(x)
+    grep("pain_", x, value = TRUE))
+pain_data_vector <- unlist(pain, use.names = FALSE)
 
+pain_data <- lapply(pain_data_vector, function(z) {
+  Filter(function(x)
+    any(x == z), survey_data)
+})
 
-#### Now looping
+##### Now looping
 dataList <-
   list(
     field_data,
+    other_description_data,
     region_data,
-    province_data,
+    # province_data,
     municipality_data,
-    number_data,
-    age_data,
-    gender_data,
+    # number_data,
+    # age_data,
+    # gender_data,
     service_data,
     priorities_data,
-    evaluated_data
+    evaluated_data,
+    pain_data
   )
 vectorList <-
   list(
     field_data_vector,
+    other_description_data_vector,
     region_data_vector,
-    province_data_vector,
+    # province_data_vector,
     municipality_data_vector,
-    number_data_vector,
-    age_data_vector,
-    gender_data_vector,
+    # number_data_vector,
+    # age_data_vector,
+    # gender_data_vector,
     service_data_vector,
     priorities_data_vector,
-    evaluated_data_vector
+    evaluated_data_vector,
+    pain_data_vector
   )
 
 
 list <- mapply(function(z, y) {
   z <-
     lapply(z, cbind, obs = 1:nrow(survey_data_cut))
-  
   z <- z %>%
     reduce(left_join, by = "obs")
   
@@ -261,16 +274,17 @@ list <- mapply(function(z, y) {
 
 ## Unlist
 field_data <- list[[1]]
-region_data <- list[[2]]
-province_data <- list[[3]]
+other_description_data <- list[[2]]
+region_data <- list[[3]]
+#province_data <- list[[3]]
 municipality_data <- list[[4]]
-number_data <- list[[5]]
-age_data <- list[[6]]
-gender_data <- list[[7]]
-service_data <- list[[8]]
-priorities_data <- list[[9]]
-evaluated_data <- list[[10]]
-
+# number_data <- list[[5]]
+# age_data <- list[[6]]
+# gender_data <- list[[7]]
+service_data <- list[[5]]
+priorities_data <- list[[6]]
+evaluated_data <- list[[7]]
+pain_data <- list[[8]]
 
 #### Naming columns
 ## Field data
@@ -278,15 +292,24 @@ names(field_data)[0:ncol(field_data)] <-
   paste("Field", 0:ncol(field_data), sep = "_") # Rename each variable field_stub
 names(field_data)[1] <- "obs" # Rename back to obs
 
+## Other description data
+names(other_description_data)[1:2] <-
+  c("obs", "Other org description")
+# Remove the prefix
+other_description_data <-
+  as.data.frame(lapply(other_description_data, function(x)
+    gsub("other_description_", "", x)))
+
+
 ## Region data
 names(region_data)[0:ncol(region_data)] <-
   paste("Region", 0:ncol(region_data), sep = "_") # Rename each variable field_stub
 names(region_data)[1] <- "obs" # Rename back to obs
 
-## Province data
-names(province_data)[0:ncol(province_data)] <-
-  paste("Province", 0:ncol(province_data), sep = "_") # Rename each variable field_stub
-names(province_data)[1] <- "obs" # Rename back to obs
+# ## Province data
+# names(province_data)[0:ncol(province_data)] <-
+#   paste("Province", 0:ncol(province_data), sep = "_") # Rename each variable field_stub
+# names(province_data)[1] <- "obs" # Rename back to obs
 
 ## Municipality data
 names(municipality_data)[0:ncol(municipality_data)] <-
@@ -296,25 +319,25 @@ names(municipality_data)[1] <- "obs" # Rename back to obs
 municipality_data <-
   as.data.frame(lapply(municipality_data, function(x)
     gsub("municipality_", "", x)))
-
-## Number data (employees)
-names(number_data)[1:4] <-
-  c("obs",
-    "perm_emp",
-    "temp_emp",
-    "volunteers")
-
-## Age data
-names(age_data)[1:3] <- c("obs", "min_age", "max_age")
-# Remove the prefix
-age_data <-
-  as.data.frame(lapply(age_data, function(x)
-    gsub("age_", "", x)))
-
-## Gender data
-names(gender_data)[0:ncol(gender_data)] <-
-  paste("Gender", 0:ncol(gender_data), sep = "_") # Rename each variable field_stub
-names(gender_data)[1] <- "obs" # Rename back to obs
+#
+# ## Number data (employees)
+# names(number_data)[1:4] <-
+#   c("obs",
+#     "perm_emp",
+#     "temp_emp",
+#     "volunteers")
+#
+# ## Age data
+# names(age_data)[1:3] <- c("obs", "min_age", "max_age")
+# # Remove the prefix
+# age_data <-
+#   as.data.frame(lapply(age_data, function(x)
+#     gsub("age_", "", x)))
+#
+# ## Gender data
+# names(gender_data)[0:ncol(gender_data)] <-
+#   paste("Gender", 0:ncol(gender_data), sep = "_") # Rename each variable field_stub
+# names(gender_data)[1] <- "obs" # Rename back to obs
 
 ## Service data
 names(service_data)[1:2] <- c("obs", "Service")
@@ -331,23 +354,33 @@ names(priorities_data)[1] <- "obs" # Rename back to obs
 ## Evaluated data
 names(evaluated_data)[1:2] <- c("obs", "evaluated")
 
+## Pain data
+names(pain_data)[0:ncol(pain_data)] <-
+  paste("Pain", 0:ncol(pain_data), sep = "_") # Rename each variable field_stub
+names(pain_data)[1] <- "obs" # Rename back to obs
+# Remove the prefix
+pain_data <-
+  as.data.frame(lapply(pain_data, function(x)
+    gsub("pain_", "", x)))
 
-#######################################################################################
-# Merge dataframes into single cleaned dataframe to be used in dashboard
+### ### ### ###### ###### ###### ###### ###### ###### ###### ###### ###### ###
+# Merge dataframes into single cleaned dataframe to be used in dashboard ####
 
 dataframes <-
   list(
     first_answers,
     field_data,
+    other_description_data,
     region_data,
-    province_data,
+    # province_data,
     municipality_data,
-    number_data,
-    gender_data,
-    age_data,
+    # number_data,
+    # gender_data,
+    # age_data,
     service_data,
     priorities_data,
-    evaluated_data
+    evaluated_data,
+    pain_data
   )
 
 dataframes <- lapply(dataframes, function(x) {
@@ -365,28 +398,38 @@ clean_data <- dataframes %>%
   reduce(left_join, by = "obs")
 
 
-###################################################################################
-# Merge in coordinates of place names
+### ###### ###### ###### ###### ###### ###### ###### ###### ###### ###
+# Merge in coordinates of place names ####
+### ###### ###### ###### ###### ###### ###### ###### ### ###### ###
 
 # Clean SA data so it is only Accent city and coordinates
-sa_data <- SouthAfricanCities[, c(2, 4, 5)]
+sa_data <- SouthAfricanCities[, c(2, 4, 5)] %>%
+  filter(!Latitude == -30.783403)  %>% # Duplicate Pretoria, removing the incorrect coordinate
+  distinct(AccentCity, .keep_all = TRUE)
 
+
+# Remove duplicates
 municipalities <- clean_data %>%
-  select(Municipality_1:perm_emp)
-
-municipalities <- municipalities[1:(length(municipalities)-1)]
+  dplyr::select(grep("Municipality", names(clean_data)))
 
 for (i in seq(municipalities)) {
   assign(paste0("municipalities_", i), municipalities[, i])
 }
 
-municipList <- lapply(ls(pattern = "municipalities_"), function(x) get(x)) 
+municipList <-
+  lapply(ls(pattern = "municipalities_"), function(x)
+    get(x))
 
 obs <- 1:nrow(municipalities)
-municipCoord <- lapply(municipList, function(x) cbind(x, obs))
+municipCoord <- lapply(municipList, function(x)
+  cbind(x, obs))
 
 municipCoord <- lapply(municipCoord, function(x) {
-  merge(x, sa_data, by.x = 1, by.y = 1, all.x = TRUE)
+  merge(x,
+        sa_data,
+        by.x = 1,
+        by.y = 1,
+        all.x = TRUE)
 })
 
 
@@ -398,27 +441,35 @@ municipCoord <- lapply(municipCoord, function(x) {
 
 cols <- as.list(as.character(1:ncol(municipalities)))
 
-dfs <- Map(function(x, n) setNames(x, c(names(x)[c(1,2)], c(paste0("Latitude_", n),
-                                                               paste0("Longitude_", n)))),
-                    municipCoord, cols)
+dfs <-
+  Map(function(x, n)
+    setNames(x, c(names(x)[c(1, 2)], c(
+      paste0("Latitude_", n),
+      paste0("Longitude_", n)
+    ))),
+    municipCoord, cols)
 
 municipCoord <- dfs %>%
   reduce(merge, by = "obs")
 
-municipCoord <- distinct(municipCoord, obs, .keep_all = TRUE)   # Just randomly deleting duplicates
+municipCoord <-
+  distinct(municipCoord, obs, .keep_all = TRUE)   # Just randomly deleting duplicates
 
 municipalities_colnames <- colnames(municipalities)
 
 # Merge back into clean dataset with coordinates
-clean_data <- clean_data[, -which(names(clean_data) %in% municipalities_colnames)] 
-clean_data <- merge(clean_data, municipCoord, by = "obs", .keep_all=TRUE)
+clean_data <-
+  clean_data[, -which(names(clean_data) %in% municipalities_colnames)]
+clean_data <-
+  merge(clean_data, municipCoord, by = "obs", .keep_all = TRUE)
 
 
 #### Reshape data long
 ## Slice into x number of dataframes that will be renamed then appended
 colnames <- c("obs", "Municipality", "Latitude", "Longitude")
 
-splitMunicip <- municipCoord[, grepl("Municipality", names(municipCoord))]
+splitMunicip <-
+  municipCoord[, grepl("Municipality", names(municipCoord))]
 numMunicip <- c(1:ncol(splitMunicip)) %>%
   as.character()
 
@@ -428,100 +479,269 @@ splitMunicip <- lapply(numMunicip, function(x) {
 splitMunicip <- lapply(splitMunicip, setNames, colnames)
 
 coordDF <- bind_rows(splitMunicip)
-coordDF <-  coordDF[rowSums(is.na(coordDF)) == 0,]     # Remove empty rows
+coordDF <-
+  coordDF[rowSums(is.na(coordDF)) == 0,]     # Remove empty rows
 
-#######################################################################################
+### ###### ###### ###### ###### ###### ###### ###### ###### ###### ###
+# Learner:educator chloropleth data preparation ####
+### ###### ###### ###### ###### ###### ###### ###### ###### ###### ###
+# Shapefile
+bounds <-
+  st_read(
+    "~/Firdale Consulting/NGO-survey-dashboard/Dashboard/Local_Municipalities_2016.shp"
+  )
 
-# For Priorities graph, create dataset that gives the total proportions of each category
+# Get the municipality average learner:teacher ratio
+school_data <-
+  read.csv(
+    "~/Firdale Consulting/NGO-survey-dashboard/Dashboard/2018 Masterlist Ordinary schools National Masterlist.csv"
+  )
+school_data <- school_data %>%
+  mutate(Learners_2018 = na_if(Learners_2018, 0)) %>%
+  mutate(Educator_2018 = na_if(Educator_2018, 0)) %>%
+  mutate(ratio = Learners_2018 / Educator_2018) %>%
+  group_by(LMunName) %>%
+  mutate(ave_ratio = median(ratio, na.rm = TRUE)) %>%   # Note that this is the median
+  select(LMunName, ave_ratio) %>%
+  na.omit() %>%
+  distinct(LMunName, .keep_all = TRUE)
 
-# priorities_data <- clean_data
-# 
-# 
-# priorities_long <- melt(priorities_data, id="obs")
-# priorities_long <- na.omit(priorities_long) %>%
-#   dplyr::rename(., `All priorities` = value) %>%
-#   select(3)
-# 
-# priorities_table <- table(priorities_long)
-# priorities_prop <- as.data.frame(prop.table(priorities_table))
-# 
-# 
-# x <- ggplot(priorities_prop, aes(x = priorities_long, y = Freq)) +
-#   geom_bar(stat = "identity", fill = " steelblue") + theme_classic() +
-#   geom_text(aes(label = round(Freq, 2)),
-#             vjust = 1.6,
-#             color = " white",
-#             size = 3.5)
-# x
+school_data$LMunName <- tolower(school_data$LMunName)
+school_data$LMunName <-
+  gsub("local municipality", "", school_data$LMunName)
+school_data$LMunName <-
+  gsub("metropolitan municipality", "", school_data$LMunName)
+school_data$LMunName <-
+  gsub("municipality", "", school_data$LMunName)
+school_data$LMunName <- trimws(school_data$LMunName)
+colnames(school_data) <- c("Municipality", "Ratio")
 
-#######################################################################################
-# Timeline data preparation
-# 
-# # Create new dataframe
-# time_df <- clean_data
-# 
-# # Create new date variable
-# time_df$established_1 <- as.Date(ISOdate(time_df$established, 1, 1))
-# 
-# ## To distinguish between NGOs and Donors
-# status_levels <- c("ngo", "donor")
-# status_colors <- c("#0070C0", "#00B050")
-# 
-# time_df$status <- factor(time_df$ngo_or_donor, levels=status_levels, ordered=TRUE)
-# 
-# ## This is for positioning the vertical lines
-# positions <- c(0.5, -0.5, 1.0, -1.0, 1.5, -1.5)
-# directions <- c(1, -1)
-# 
-# line_pos <- data.frame(
-#   "established"=unique(time_df$established),
-#   "position"=rep(positions, length.out=length(unique(time_df$established))),
-#   "direction"=rep(directions, length.out=length(unique(time_df$established)))
-# )
-# 
-# time_df <- merge(x=time_df, y=line_pos, by="established", all = TRUE)
-# timeline_df <- time_df[with(time_df, order(established, status)),]
-# 
-# ## This is to offset the lollipops for orgs that are established on the same month
-# text_offset <- 0.05
-# time_df$year_count <- ave(time_df$established==time_df$established, time_df$established, FUN = cumsum)
-# time_df$text_position <- (time_df$month_count * text_offset * time_df$direction) + time_df$position
-# 
-# ## This is to create a buffer two years on either side of the earliest and most recently established orgs
-# year_buffer <- 2
-# year_date_range <- seq(min(time_df$established) - year_buffer, max(time_df$established) + year_buffer, by=1)
-# 
-# year_df <- data.frame(year_date_range)
-# 
-# #### Create plot
-# 
-# timeline_plot <- ggplot(time_df, aes(x=established,y=0, col=status, label=name))
-# 
-# timeline_plot<-timeline_plot+labs(col="NGO or Donor")
-# 
-# timeline_plot<-timeline_plot+scale_color_manual(values=status_colors, labels=status_levels, drop = FALSE)
-# 
-# timeline_plot<-timeline_plot+theme_classic()
-# 
-# timeline_plot <- timeline_plot+geom_hline(yintercept=0, 
-#                                           color = "black", size=0.3)
-# 
-# # Plot vertical segment lines for milestones
-# 
-# timeline_plot<-timeline_plot+geom_segment(data=time_df[time_df$year_count == 1,], aes(y=position,yend=0,xend=established, color='black', size=0.2))
-# 
-# 
-# 
-# 
-# 
-# timeline_plot
-
-#######################################################################################
+bounds$MUNICNAME <- tolower(bounds$MUNICNAME)
+bounds$MUNICNAME <- gsub("municipality", "", bounds$MUNICNAME)
+bounds$MUNICNAME <- trimws(bounds$MUNICNAME)
+colnames(bounds)[6] <- "Municipality"
 
 
-#######################################################################################
-# Dashboard
+# Merge the two datasets
+mapdata <- left_join(bounds, school_data, by = "Municipality")
 
+# Create bins
+bins <-
+  c(6, 10, 11, 15, 16, 20, 21, 25, 26, 30, 31, 35, 36, 40)
+pal <- colorBin("YlOrRd", domain = mapdata$Ratio, bins = bins)
+
+# Add labels
+mapdata$Municipality <-
+  gsub("(?<=\\b)([a-z])",
+       "\\U\\1",
+       tolower(mapdata$Municipality),
+       perl = TRUE)
+mapdata$Ratio <- round(mapdata$Ratio, 1)
+labels <- sprintf(
+  "<strong>%s</strong><br/>%g learners per educator",
+  mapdata$Municipality,
+  mapdata$Ratio
+) %>% lapply(htmltools::HTML)
+
+mapdata <- rmapshaper::ms_simplify(mapdata, keep = 0.05, keep_shapes = TRUE)
+
+# Create the map
+chloro <- leaflet() %>%
+  addTiles() %>%
+  setView(lng = 26.154898,
+          lat = -29.087217,
+          zoom = 6) %>%
+  addPolygons(
+    data = mapdata,
+    weight = 1,
+    fillColor = ~ pal(Ratio),
+    color = "white",
+    fillOpacity = 0.7,
+    # highlight = highlightOptions(
+    #   weight = 5,
+    #   color = "#666",
+    #   dashArray = "",
+    #   fillOpacity = 0.7,
+    #   bringToFront = TRUE),
+    label = labels,
+    labelOptions = labelOptions(
+      style = list("font-weight" = "normal", padding = "3px 8px"),
+      textsize = "15px",
+      direction = "auto"
+    )
+  ) %>%
+  addLegend(
+    pal = pal,
+    values = mapdata$Ratio,
+    opacity = 0.7,
+    position = "bottomright"
+  ) 
+
+### ###### ###### ###### ###### ###### ###### ###### ###### ###### ###
+# Community data chloropleth ####
+### ###### ###### ###### ###### ###### ###### ###### ###### ###### ###
+community_cleaned <- read.csv("~/Firdale Consulting/NGO-survey-dashboard/Municipality map/community_cleaned.csv") %>%
+  mutate(Municipality = tolower(Municipality)) %>%
+  mutate(Crime = Crime*10)
+community_cleaned$Municipality <- tolower(community_cleaned$Municipality) 
+
+
+# Merge datasets
+community_map <- left_join(bounds, community_cleaned, by = "Municipality")
+
+
+# Create bins
+pal <- colorBin("YlOrRd", domain = community_map$Crime)
+
+# Add labels
+community_map$Municipality <-
+  gsub("(?<=\\b)([a-z])",
+       "\\U\\1",
+       tolower(community_map$Municipality),
+       perl = TRUE)
+labels <- sprintf(
+  "<strong>%s</strong><br/>%g / 1000 a victim of crime in 2015",
+  community_map$Municipality,
+  community_map$Crime
+) %>% lapply(htmltools::HTML)
+
+# Create the map
+crime_chloro <- leaflet() %>%
+  addTiles() %>%
+  setView(lng = 26.154898,
+          lat = -29.087217,
+          zoom = 6) %>%
+  addPolygons(
+    data = community_map,
+    weight = 1,
+    fillColor = ~ pal(Crime),
+    color = "white",
+    fillOpacity = 0.7,
+    # highlight = highlightOptions(
+    #   weight = 5,
+    #   color = "#666",
+    #   dashArray = "",
+    #   fillOpacity = 0.7,
+    #   bringToFront = TRUE),
+    label = labels,
+    labelOptions = labelOptions(
+      style = list("font-weight" = "normal", padding = "3px 8px"),
+      textsize = "15px",
+      direction = "auto"
+    )
+  ) %>%
+  addLegend(
+    pal = pal,
+    values = community_map$Crime,
+    opacity = 0.7,
+    position = "bottomright"
+  ) 
+
+crime_chloro
+
+### Hospital rating
+pal <- colorBin("YlOrRd", domain = community_map$RateHospital)
+
+# Add labels
+community_map$Municipality <-
+  gsub("(?<=\\b)([a-z])",
+       "\\U\\1",
+       tolower(community_map$Municipality),
+       perl = TRUE)
+labels <- sprintf(
+  "<strong>%s</strong><br/>%g / hospital rating (out of 4)",
+  community_map$Municipality,
+  community_map$RateHospital
+) %>% lapply(htmltools::HTML)
+
+# Create the map
+RateHospital_chloro <- leaflet() %>%
+  addTiles() %>%
+  setView(lng = 26.154898,
+          lat = -29.087217,
+          zoom = 6) %>%
+  addPolygons(
+    data = community_map,
+    weight = 1,
+    fillColor = ~ pal(RateHospital),
+    color = "white",
+    fillOpacity = 0.7,
+    # highlight = highlightOptions(
+    #   weight = 5,
+    #   color = "#666",
+    #   dashArray = "",
+    #   fillOpacity = 0.7,
+    #   bringToFront = TRUE),
+    label = labels,
+    labelOptions = labelOptions(
+      style = list("font-weight" = "normal", padding = "3px 8px"),
+      textsize = "15px",
+      direction = "auto"
+    )
+  ) %>%
+  addLegend(
+    pal = pal,
+    values = community_map$RateHospital,
+    opacity = 0.7,
+    position = "bottomright"
+  ) 
+
+RateHospital_chloro
+
+# Toilet
+### Hospital rating
+pal <- colorBin("YlOrRd", domain = community_map$RateToilet)
+
+# Add labels
+community_map$Municipality <-
+  gsub("(?<=\\b)([a-z])",
+       "\\U\\1",
+       tolower(community_map$Municipality),
+       perl = TRUE)
+labels <- sprintf(
+  "<strong>%s</strong><br/>%g / toilet rating (out of 4)",
+  community_map$Municipality,
+  community_map$RateToilet
+) %>% lapply(htmltools::HTML)
+
+# Create the map
+RateToilet_chloro <- leaflet() %>%
+  addTiles() %>%
+  setView(lng = 26.154898,
+          lat = -29.087217,
+          zoom = 6) %>%
+  addPolygons(
+    data = community_map,
+    weight = 1,
+    fillColor = ~ pal(RateToilet),
+    color = "white",
+    fillOpacity = 0.7,
+    # highlight = highlightOptions(
+    #   weight = 5,
+    #   color = "#666",
+    #   dashArray = "",
+    #   fillOpacity = 0.7,
+    #   bringToFront = TRUE),
+    label = labels,
+    labelOptions = labelOptions(
+      style = list("font-weight" = "normal", padding = "3px 8px"),
+      textsize = "15px",
+      direction = "auto"
+    )
+  ) %>%
+  addLegend(
+    pal = pal,
+    values = community_map$RateToilet,
+    opacity = 0.7,
+    position = "bottomright"
+  ) 
+
+RateToilet_chloro
+
+
+### ###### ###### ###### ###### ###### ###### ###### ###### ###### ###
+# Dashboard ####
+### ###### ###### ###### ###### ###### ###### ###### ###### ###### ###
 
 # Create vector containing all Fields in the dataset
 fields_unique <- as.vector(as.matrix(field_data[, -c(1)]))
@@ -533,52 +753,79 @@ fields <- fields[!is.na(fields)]
 
 
 ui <- dashboardPage(
-  dashboardHeader(title = "Name pending"),
-  dashboardSidebar(fluidRow(
-    status = "primary",
-    checkboxGroupInput(
-      "field_of_work",
-      "Field of work",
-      choices =  fields,
-      selected = fields
-    )
-  )),
-  dashboardBody(fluidRow(box(width = 12,
-      title = "Map",
-      status = "primary",
-      solidHeader = TRUE,
-      leafletOutput(outputId = "map")
-  )), 
-    fluidRow(
+  dashboardHeader(title = "Survey Results"), 
+  dashboardSidebar(disable = TRUE),
+  dashboardBody(fluidRow(
     box(
-      title = "Priorities",
+      title = "Maps",
       status = "primary",
       solidHeader = TRUE,
-      plotOutput("priorities_plot", width = "100%", height = "400px")
-    ),
+      width = 12,
+      collapsible = TRUE,
+      (tabBox(
+        width = 12,
+        tabPanel(
+          "Plain tab",
+          leafletOutput(outputId = "map"),
+          absolutePanel(
+            bottom = 10,
+            left = 10,
+            box(
+              width = 12,
+              status = "warning",
+              collapsible = TRUE,
+              checkboxGroupInput(
+                "field_of_work",
+                "Field of work",
+                choices =  fields,
+                selected = fields
+              )
+            )
+          )
+        ),
+        tabPanel("Learner-educator ratio",
+                 leafletOutput("chloro"),
+                 absolutePanel(
+                   bottom = 10,
+                   left = 10,
+                   box(
+                     width = 12,
+                     status = "warning",
+                     collapsible = TRUE,
+                     checkboxGroupInput(
+                       "field_of_work_2",
+                       "Field of work",
+                       choices =  fields,
+                       selected = fields
+                     )
+                   )
+                 ))
+      ))
+    )
+  ),
+  fluidRow(
     box(
       title = "Word cloud of service provided",
       status = "primary",
       solidHeader = TRUE,
-      plotOutput("wordcloud", width = "100%", height = "400px")
+      collapsible = TRUE,
+      plotOutput("wordcloud", width = "100%")
     ),
-    box(width = 12,
-        title = "Timeline",
-        status = "primary",
-        solidHeader = TRUE,
-        timevisOutput("timeline"))
-  ))
-)
+    box(title = "Focus areas", status = "primary", solidHeader = TRUE,
+        collapsible = TRUE, plotOutput("focus_plot"), 
+        absolutePanel(top = 60, right = 20, checkboxGroupInput(
+          "organization",
+          "Type of organization",
+          choices =  c("NGO"="ngo", "Donor"="donor", "Social impact investor"="sia"),
+          selected = c("NGO"="ngo", "Donor"="donor", "Social impact investor"="sia")))))
+))
 
 
 
-
-
-
-# Define server logic
+# Define server logic ####
 server <- function(input, output) {
-  # Dataset reactive to checkbox input
-  
+
+  # Map
   selectedData <- reactive({
     selectedData <- clean_data %>%
       filter_all(any_vars(str_detect(
@@ -586,7 +833,6 @@ server <- function(input, output) {
       )))
   })
   
-  # Map
   info_data <- reactive({
     selectedData()[, c(1, 3:5)]
   })
@@ -596,59 +842,74 @@ server <- function(input, output) {
   })
   
   info <- reactive({
-    paste(sep = "<br/>",
-                paste0("<b><a href='",coordDF_1()$website, "'>", coordDF_1()$name, "</a></b>"),
-                paste("Est.", coordDF_1()$established)
-)
+    paste(
+      sep = "<br/>",
+      paste0(
+        "<b><a href='",
+        coordDF_1()$website,
+        "'>",
+        coordDF_1()$name,
+        "</a></b>"
+      ),
+      paste("Est.", coordDF_1()$established)
+    )
   })
-
+  
   output$map <- renderLeaflet({
     leaflet() %>%
       addTiles() %>%
-      addMarkers(lng = as.numeric(coordDF_1()$Longitude), lat = as.numeric(coordDF_1()$Latitude), 
-                 popup = info())
+      addMarkers(
+        lng = as.numeric(coordDF_1()$Longitude),
+        lat = as.numeric(coordDF_1()$Latitude),
+        popup = info()
+      )
   })
   
-  # Histogram
-  output$priorities_plot <- renderPlot({
-    priorities_prop <- selectedData()[, c(grep("Priority|obs", names(selectedData()))), drop = F]
-    
-    priorities_long <- melt(priorities_prop, id="obs")
-    priorities_long <- na.omit(priorities_long) %>%
-      dplyr::rename(., `All priorities` = value) %>%
-      select(3) 
-    
-    max_prop <- max(priorities_prop$Freq*100)
-    max_prop <- round(max_prop+30, -1)
-    
-    priorities_prop <- priorities_long %>%
-      group_by(`All priorities`) %>%
-      summarize(count = n()) %>%
-      mutate(pct = round(((count/sum(count))*100)),1)
-    
-    max_prop <- max(priorities_prop$pct)
-    max_prop <- round(max_prop+20, -1)
-    
-    priorities_plot <- ggplot(priorities_prop, aes(`All priorities`, pct)) + geom_bar(stat = 'identity', fill="darkblue") +
-      scale_y_continuous("Proportion of NGOs that have as a priority (%)", limits = c(0,max_prop)) + 
-      scale_x_discrete(
-        labels = function(labels) {
-          sapply(seq_along(labels), function(i)
-            paste0(ifelse(i %% 2 == 0, '', '\n'), labels[i]))
-        }) +
-      geom_text(
-        aes(label = paste0(pct, "%")),
-        vjust = 1.6,
-        color = "white",
-        size = 3.5
-      ) + xlab("Priorities")
-    priorities_plot
+  
+  # Chloropleth
+  selectedData_2 <- reactive({
+    selectedData_2 <- clean_data %>%
+      filter_all(any_vars(str_detect(
+        ., paste(input$field_of_work_2, collapse = "|")
+      )))
+  })
+  
+  info_data_2 <- reactive({
+    selectedData_2()[, c(1, 3:5)]
+  })
+  
+  coordDF_2 <- reactive({
+    merge(coordDF, info_data_2())
+  })
+  
+  info_2 <- reactive({
+    paste(
+      sep = "<br/>",
+      paste0(
+        "<b><a href='",
+        coordDF_2()$website,
+        "'>",
+        coordDF_2()$name,
+        "</a></b>"
+      ),
+      paste("Est.", coordDF_2()$established)
+    )
+  })
+  
+  
+  output$chloro <- renderLeaflet({
+  chloro %>%
+    addMarkers(
+        lng = as.numeric(coordDF_2()$Longitude),
+        lat = as.numeric(coordDF_2()$Latitude),
+        popup = info_2()
+      )
   })
   
   
   # Wordcloud
   output$wordcloud <- renderPlot({
-    docs <- Corpus(VectorSource(selectedData()$Service))
+    docs <- Corpus(VectorSource(clean_data$Service))
     
     # Cleaning the text
     docs <-
@@ -681,15 +942,51 @@ server <- function(input, output) {
     )
   })
   
-  # Timeline
-  output$timeline <- renderTimevis({
-    time_df <- select(selectedData(), name, established) %>%
-      dplyr::rename(content=name, start=established)
-    timeline <- timevis(time_df)
-    timeline
+# Focus area plot
+  # Filter data
+  selectedData_3 <- reactive({
+    clean_data %>%
+      filter_all(any_vars(str_detect(
+        ., paste(input$organization, collapse = "|")
+      )))
+  })
+
+  
+  # Shape data
+  focus_data <- reactive({
+    focus_data <- selectedData_3() %>%
+      select(obs, grep("Field", names(selectedData_3()))) %>%
+      gather(., Column, Focus, 2:ncol(.)) %>%
+      na.omit() %>%
+      select(Focus) 
     
+    focus_data <- as.data.frame(table(focus_data$Focus))
+    focus_data <-  mutate(focus_data, pct = round(((focus_data$Freq/nrow(focus_data))*100),1))
+  })
+  
+  
+  output$focus_plot <- renderPlot({
+    validate(need(nrow(selectedData_3()) > 0, "No data for this selection"))
+    
+    max_prop <- round((max(focus_data()$pct) + 15)) 
+   plot <-  ggplot(focus_data(), aes(Var1, pct)) + geom_bar(stat = 'identity', fill="grey") +
+      scale_y_continuous("", limits = c(0,max_prop)) + 
+      scale_x_discrete("",
+        labels = function(labels) {
+          sapply(seq_along(labels), function(i)
+            paste0(ifelse(i %% 2 == 0, '', '\n'), labels[i]))
+        }) +
+      geom_text(
+        aes(label = paste0(pct, "%")),
+        vjust = 1.6,
+        color = "black",
+        size = 3.5
+      ) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+                panel.background = element_blank())
+   plot
   })
 }
 
 # Run the application
 shinyApp(ui = ui, server = server)
+
