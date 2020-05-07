@@ -23,7 +23,10 @@ library(sf)
 library(dplyr)
 
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> aa2095b03efa1bf2d60cf8a6a111f5540f021e55
 survey_data <-
   gs_key("1bnWcFKSQZo5aMOd_9BdjQIt_W4iMjWvzMODOoepLq6k") %>%
   gs_read(ws = "Survey")
@@ -90,6 +93,7 @@ field_data <- lapply(field_data_vector, function(z) {
     any(x == z), survey_data)
 })
 
+<<<<<<< HEAD
 # Description of organisations falling under "other"
 other_description <-
   sapply(survey_data_cut, function(x)
@@ -102,6 +106,18 @@ other_description_data <-
     Filter(function(x)
       any(x == z), survey_data)
   })
+=======
+# Description of organisations falling under "other" 
+other_description <-
+  sapply(survey_data_cut, function(x)
+    grep("other_description", x, value = TRUE))
+other_description_data_vector <- unlist(other_description, use.names = FALSE)
+
+other_description_data <- lapply(other_description_data_vector, function(z) {
+  Filter(function(x)
+    any(x == z), survey_data)
+})
+>>>>>>> aa2095b03efa1bf2d60cf8a6a111f5540f021e55
 
 # Region of operation
 region_data_vector <-
@@ -293,8 +309,12 @@ names(field_data)[0:ncol(field_data)] <-
 names(field_data)[1] <- "obs" # Rename back to obs
 
 ## Other description data
+<<<<<<< HEAD
 names(other_description_data)[1:2] <-
   c("obs", "Other org description")
+=======
+names(other_description_data)[1:2] <- c("obs", "Other org description")
+>>>>>>> aa2095b03efa1bf2d60cf8a6a111f5540f021e55
 # Remove the prefix
 other_description_data <-
   as.data.frame(lapply(other_description_data, function(x)
@@ -319,21 +339,33 @@ names(municipality_data)[1] <- "obs" # Rename back to obs
 municipality_data <-
   as.data.frame(lapply(municipality_data, function(x)
     gsub("municipality_", "", x)))
+<<<<<<< HEAD
 #
+=======
+# 
+>>>>>>> aa2095b03efa1bf2d60cf8a6a111f5540f021e55
 # ## Number data (employees)
 # names(number_data)[1:4] <-
 #   c("obs",
 #     "perm_emp",
 #     "temp_emp",
 #     "volunteers")
+<<<<<<< HEAD
 #
+=======
+# 
+>>>>>>> aa2095b03efa1bf2d60cf8a6a111f5540f021e55
 # ## Age data
 # names(age_data)[1:3] <- c("obs", "min_age", "max_age")
 # # Remove the prefix
 # age_data <-
 #   as.data.frame(lapply(age_data, function(x)
 #     gsub("age_", "", x)))
+<<<<<<< HEAD
 #
+=======
+# 
+>>>>>>> aa2095b03efa1bf2d60cf8a6a111f5540f021e55
 # ## Gender data
 # names(gender_data)[0:ncol(gender_data)] <-
 #   paste("Gender", 0:ncol(gender_data), sep = "_") # Rename each variable field_stub
@@ -479,6 +511,7 @@ splitMunicip <- lapply(numMunicip, function(x) {
 splitMunicip <- lapply(splitMunicip, setNames, colnames)
 
 coordDF <- bind_rows(splitMunicip)
+<<<<<<< HEAD
 coordDF <-
   coordDF[rowSums(is.na(coordDF)) == 0, ]     # Remove empty rows
 
@@ -502,17 +535,41 @@ school_data <- school_data %>%
   mutate(ratio = Learners_2018 / Educator_2018) %>%
   group_by(LMunName) %>%
   mutate(ave_ratio = median(ratio, na.rm = TRUE)) %>%   # Note that this is the median
+=======
+coordDF <-  coordDF[rowSums(is.na(coordDF)) == 0,]     # Remove empty rows
+
+#######################################################################################
+# Learner:educator chloropleth data preparation
+
+# Shapefile
+bounds <- st_read("~/Firdale Consulting/NGO-survey-dashboard/Dashboard/Local_Municipalities_2016.shp")
+
+# Get the municipality average learner:teacher ratio
+school_data <- read.csv("~/Firdale Consulting/NGO-survey-dashboard/Dashboard/2018 Masterlist Ordinary schools National Masterlist.csv")
+school_data <- school_data %>%
+  mutate(Learners_2018 = na_if(Learners_2018, 0)) %>%
+  mutate(Educator_2018 = na_if(Educator_2018, 0)) %>%
+  mutate(ratio = Learners_2018/Educator_2018) %>%
+  group_by(LMunName) %>%
+  mutate(ave_ratio = median(ratio, na.rm=TRUE)) %>%   # Note that this is the median
+>>>>>>> aa2095b03efa1bf2d60cf8a6a111f5540f021e55
   select(LMunName, ave_ratio) %>%
   na.omit() %>%
   distinct(LMunName, .keep_all = TRUE)
 
 school_data$LMunName <- tolower(school_data$LMunName)
+<<<<<<< HEAD
 school_data$LMunName <-
   gsub("local municipality", "", school_data$LMunName)
 school_data$LMunName <-
   gsub("metropolitan municipality", "", school_data$LMunName)
 school_data$LMunName <-
   gsub("municipality", "", school_data$LMunName)
+=======
+school_data$LMunName <- gsub("local municipality", "", school_data$LMunName)
+school_data$LMunName <- gsub("metropolitan municipality", "", school_data$LMunName)
+school_data$LMunName <- gsub("municipality", "", school_data$LMunName)
+>>>>>>> aa2095b03efa1bf2d60cf8a6a111f5540f021e55
 school_data$LMunName <- trimws(school_data$LMunName)
 colnames(school_data) <- c("Municipality", "Ratio")
 
@@ -523,6 +580,7 @@ colnames(bounds)[6] <- "Municipality"
 
 
 # Merge the two datasets
+<<<<<<< HEAD
 mapdata <- left_join(bounds, school_data, by = "Municipality")
 
 # Create bins
@@ -741,6 +799,19 @@ RateToilet_chloro <- leaflet() %>%
     opacity = 0.7,
     position = "bottomright"
   )
+=======
+mapdata <- left_join(bounds, school_data, by="Municipality")
+
+# Create bins
+bins <- c(-Inf, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, Inf)
+pal <- colorBin("YlOrRd", domain = mapdata$Ratio, bins = bins)
+
+#######################################################################################
+
+
+#######################################################################################
+# Dashboard
+>>>>>>> aa2095b03efa1bf2d60cf8a6a111f5540f021e55
 
 RateToilet_chloro
 
@@ -760,6 +831,7 @@ fields <- fields[!is.na(fields)]
 
 ui <- dashboardPage(
   dashboardHeader(title = "Survey Results"),
+<<<<<<< HEAD
   dashboardSidebar(disable = TRUE),
   dashboardBody(fluidRow(
     box(
@@ -845,6 +917,52 @@ ui <- dashboardPage(
       )
     )
   ))
+=======
+  dashboardSidebar(fluidRow(
+    status = "primary",
+    checkboxGroupInput(
+      "field_of_work",
+      "Field of work",
+      choices =  fields,
+      selected = fields
+    )
+  )),
+  # dashboardBody(fluidRow(box(width = 12,
+  #     title = "Map", collapsible = TRUE,
+  #     status = "primary",
+  #     solidHeader = TRUE,
+  #     leafletOutput(outputId = "map")
+  # )), 
+  #   fluidRow(
+  #   box(collapsible = TRUE,
+  #     title = "Priorities", 
+  #     status = "primary",
+  #     solidHeader = TRUE,
+  #     plotOutput("priorities_plot", width = "100%", height = "600px")
+  #   ),
+  #   box(
+  #     title = "Word cloud of service provided",
+  #     status = "primary",
+  #     solidHeader = TRUE, collapsible = TRUE,
+  #     plotOutput("wordcloud", width = "100%", height="600px")
+  #   ),
+  #   box(width = 12,
+  #       title = "Timeline",
+  #       status = "primary",
+  #       solidHeader = TRUE, collapsible = TRUE,
+  #       timevisOutput("timeline"))
+  # ))
+  dashboardBody(
+    tabsetPanel(
+      type = "tabs",
+      tabPanel("NGO locations", leafletOutput(outputId = "map")),
+      tabPanel("Learner-educator chloropleth", leafletOutput(outputId = "chloro")),
+      tabPanel("Priorities", plotOutput("priorities_plot", width = "100%", height = "600px")),
+      tabPanel("Wordcloud", plotOutput("wordcloud", width = "100%", height="600px")),
+      tabPanel("Timeline", timevisOutput("timeline"))
+    )
+  )
+>>>>>>> aa2095b03efa1bf2d60cf8a6a111f5540f021e55
 )
 
 
@@ -893,6 +1011,7 @@ server <- function(input, output) {
   
   
   # Chloropleth
+<<<<<<< HEAD
   selectedData_2 <- reactive({
     selectedData_2 <- clean_data %>%
       filter_all(any_vars(str_detect(
@@ -930,6 +1049,89 @@ server <- function(input, output) {
         lat = as.numeric(coordDF_2()$Latitude),
         popup = info_2()
       )
+=======
+  output$chloro <- renderLeaflet({
+    m <- leaflet() %>%
+      addTiles() %>%
+      setView(lng = 26.154898, lat=-29.087217,zoom=6) 
+    # 
+    # m <- m %>%
+    #   addPolygons(data=mapdata,weight=1, fillColor = ~pal(Ratio),
+    #               color = "white", fillOpacity = 0.7,
+    #               highlight = highlightOptions(
+    #                 weight = 5,
+    #                 color = "#666",
+    #                 dashArray = "",
+    #                 fillOpacity = 0.7,
+    #                 bringToFront = TRUE)) %>%
+    #   addLegend(pal = pal, values = mapdata$Ratio, opacity = 0.7)
+    # 
+    # m
+    
+    # Add labels
+    mapdata$Municipality <- gsub("(?<=\\b)([a-z])", "\\U\\1", tolower(mapdata$Municipality), perl=TRUE)
+    mapdata$Ratio <- round(mapdata$Ratio, 1)
+    labels <- sprintf(
+      "<strong>%s</strong><br/>%g learners per educator",
+      mapdata$Municipality, mapdata$Ratio
+    ) %>% lapply(htmltools::HTML)
+    
+    m <- m %>%
+      addPolygons(data=mapdata,weight=1, fillColor = ~pal(Ratio),
+                  color = "white", fillOpacity = 0.7,
+                  # highlight = highlightOptions(
+                  #   weight = 5,
+                  #   color = "#666",
+                  #   dashArray = "",
+                  #   fillOpacity = 0.7,
+                  #   bringToFront = TRUE),
+                  label = labels, labelOptions = labelOptions(
+                    style = list("font-weight" = "normal", padding = "3px 8px"),
+                    textsize = "15px",
+                    direction = "auto")) %>%
+      addLegend(pal = pal, values = mapdata$Ratio, opacity = 0.7,
+                position = "bottomright") %>%
+      addMarkers(lng = as.numeric(coordDF_1()$Longitude), lat = as.numeric(coordDF_1()$Latitude), 
+                 popup = info())
+    
+    m
+  })
+  
+  # Histogram
+  output$priorities_plot <- renderPlot({
+    priorities_prop <- selectedData()[, c(grep("Priority|obs", names(selectedData()))), drop = F]
+    
+    priorities_long <- melt(priorities_prop, id="obs")
+    priorities_long <- na.omit(priorities_long) %>%
+      dplyr::rename(., `All priorities` = value) %>%
+      select(3) 
+    
+    max_prop <- max(priorities_prop$Freq*100)
+    max_prop <- round(max_prop+30, -1)
+    
+    priorities_prop <- priorities_long %>%
+      group_by(`All priorities`) %>%
+      summarize(count = n()) %>%
+      mutate(pct = round(((count/sum(count))*100)),1)
+    
+    max_prop <- max(priorities_prop$pct)
+    max_prop <- round(max_prop+20, -1)
+    
+    priorities_plot <- ggplot(priorities_prop, aes(`All priorities`, pct)) + geom_bar(stat = 'identity', fill="darkblue") +
+      scale_y_continuous("Proportion of NGOs that have as a priority (%)", limits = c(0,max_prop)) + 
+      scale_x_discrete(
+        labels = function(labels) {
+          sapply(seq_along(labels), function(i)
+            paste0(ifelse(i %% 2 == 0, '', '\n'), labels[i]))
+        }) +
+      geom_text(
+        aes(label = paste0(pct, "%")),
+        vjust = 1.6,
+        color = "white",
+        size = 3.5
+      ) + xlab("Priorities")
+    priorities_plot
+>>>>>>> aa2095b03efa1bf2d60cf8a6a111f5540f021e55
   })
   
   
