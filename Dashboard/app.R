@@ -589,7 +589,7 @@ community_cleaned$Municipality <- tolower(community_cleaned$Municipality)
 # Merge datasets
 community_map <- left_join(bounds, community_cleaned, by = "Municipality")
 
-
+# _Crime ####
 # Create bins
 pal <- colorBin("YlOrRd", domain = community_map$Crime)
 
@@ -604,6 +604,8 @@ labels <- sprintf(
   community_map$Municipality,
   community_map$Crime
 ) %>% lapply(htmltools::HTML)
+
+community_map <- rmapshaper::ms_simplify(community_map, keep = 0.05, keep_shapes = TRUE)
 
 # Create the map
 crime_chloro <- leaflet() %>%
@@ -637,9 +639,8 @@ crime_chloro <- leaflet() %>%
     position = "bottomright"
   ) 
 
-crime_chloro
 
-### Hospital rating
+# _Hospital  ####
 pal <- colorBin("YlOrRd", domain = community_map$RateHospital)
 
 # Add labels
@@ -686,10 +687,8 @@ RateHospital_chloro <- leaflet() %>%
     position = "bottomright"
   ) 
 
-RateHospital_chloro
 
-# Toilet
-### Hospital rating
+# _Toilet ####
 pal <- colorBin("YlOrRd", domain = community_map$RateToilet)
 
 # Add labels
@@ -736,8 +735,153 @@ RateToilet_chloro <- leaflet() %>%
     position = "bottomright"
   ) 
 
-RateToilet_chloro
+# _Water ####
+pal <- colorBin("YlOrRd", domain = community_map$RateWater)
 
+# Add labels
+community_map$Municipality <-
+  gsub("(?<=\\b)([a-z])",
+       "\\U\\1",
+       tolower(community_map$Municipality),
+       perl = TRUE)
+labels <- sprintf(
+  "<strong>%s</strong><br/>%g / water rating (out of 4)",
+  community_map$Municipality,
+  community_map$RateWater
+) %>% lapply(htmltools::HTML)
+
+# Create the map
+RateWater_chloro <- leaflet() %>%
+  addTiles() %>%
+  setView(lng = 26.154898,
+          lat = -29.087217,
+          zoom = 6) %>%
+  addPolygons(
+    data = community_map,
+    weight = 1,
+    fillColor = ~ pal(RateWater),
+    color = "white",
+    fillOpacity = 0.7,
+    # highlight = highlightOptions(
+    #   weight = 5,
+    #   color = "#666",
+    #   dashArray = "",
+    #   fillOpacity = 0.7,
+    #   bringToFront = TRUE),
+    label = labels,
+    labelOptions = labelOptions(
+      style = list("font-weight" = "normal", padding = "3px 8px"),
+      textsize = "15px",
+      direction = "auto"
+    )
+  ) %>%
+  addLegend(
+    pal = pal,
+    values = community_map$RateWater,
+    opacity = 0.7,
+    position = "bottomright"
+  ) 
+
+RateWater_chloro
+
+# _Police ####
+pal <- colorBin("YlOrRd", domain = community_map$RatePolice)
+
+# Add labels
+community_map$Municipality <-
+  gsub("(?<=\\b)([a-z])",
+       "\\U\\1",
+       tolower(community_map$Municipality),
+       perl = TRUE)
+labels <- sprintf(
+  "<strong>%s</strong><br/>%g / police rating (out of 4)",
+  community_map$Municipality,
+  community_map$RatePolice
+) %>% lapply(htmltools::HTML)
+
+# Create the map
+RatePolice_chloro <- leaflet() %>%
+  addTiles() %>%
+  setView(lng = 26.154898,
+          lat = -29.087217,
+          zoom = 6) %>%
+  addPolygons(
+    data = community_map,
+    weight = 1,
+    fillColor = ~ pal(RatePolice),
+    color = "white",
+    fillOpacity = 0.7,
+    # highlight = highlightOptions(
+    #   weight = 5,
+    #   color = "#666",
+    #   dashArray = "",
+    #   fillOpacity = 0.7,
+    #   bringToFront = TRUE),
+    label = labels,
+    labelOptions = labelOptions(
+      style = list("font-weight" = "normal", padding = "3px 8px"),
+      textsize = "15px",
+      direction = "auto"
+    )
+  ) %>%
+  addLegend(
+    pal = pal,
+    values = community_map$RatePolice,
+    opacity = 0.7,
+    position = "bottomright"
+  ) 
+
+RatePolice_chloro
+
+
+# _School ####
+pal <- colorBin("YlOrRd", domain = community_map$RateSchool)
+
+# Add labels
+community_map$Municipality <-
+  gsub("(?<=\\b)([a-z])",
+       "\\U\\1",
+       tolower(community_map$Municipality),
+       perl = TRUE)
+labels <- sprintf(
+  "<strong>%s</strong><br/>%g / nearest school rating (out of 4)",
+  community_map$Municipality,
+  community_map$RateSchool
+) %>% lapply(htmltools::HTML)
+
+# Create the map
+RateSchool_chloro <- leaflet() %>%
+  addTiles() %>%
+  setView(lng = 26.154898,
+          lat = -29.087217,
+          zoom = 6) %>%
+  addPolygons(
+    data = community_map,
+    weight = 1,
+    fillColor = ~ pal(RateSchool),
+    color = "white",
+    fillOpacity = 0.7,
+    # highlight = highlightOptions(
+    #   weight = 5,
+    #   color = "#666",
+    #   dashArray = "",
+    #   fillOpacity = 0.7,
+    #   bringToFront = TRUE),
+    label = labels,
+    labelOptions = labelOptions(
+      style = list("font-weight" = "normal", padding = "3px 8px"),
+      textsize = "15px",
+      direction = "auto"
+    )
+  ) %>%
+  addLegend(
+    pal = pal,
+    values = community_map$RateSchool,
+    opacity = 0.7,
+    position = "bottomright"
+  ) 
+
+RateSchool_chloro
 
 ### ###### ###### ###### ###### ###### ###### ###### ###### ###### ###
 # Dashboard ####
@@ -749,7 +893,7 @@ fields <- unique(fields_unique)
 fields <- fields[!is.na(fields)]
 
 
-# Define UI for application
+# Define UI for application ####
 
 
 ui <- dashboardPage(
@@ -757,15 +901,11 @@ ui <- dashboardPage(
   dashboardSidebar(disable = TRUE),
   dashboardBody(fluidRow(
     box(
-      title = "Maps",
+      title = "",
       status = "primary",
       solidHeader = TRUE,
       width = 12,
       collapsible = TRUE,
-      (tabBox(
-        width = 12,
-        tabPanel(
-          "Plain tab",
           leafletOutput(outputId = "map"),
           absolutePanel(
             bottom = 10,
@@ -774,33 +914,17 @@ ui <- dashboardPage(
               width = 12,
               status = "warning",
               collapsible = TRUE,
-              checkboxGroupInput(
-                "field_of_work",
-                "Field of work",
-                choices =  fields,
-                selected = fields
+              radioButtons(
+                "map_type",
+                "Satisfaction with service delivery (municipality average)",
+                choices =  c("None"="basic", "Access to running water" = "water","Access to sanitation/toilets"=
+                               "toilet","Quality of nearest hospital"="hospital","Quality of nearest school"="school",
+                             "Quality of local police"=
+                               "police", "Average number of crime victims"="crime"),
+                selected = "basic"
               )
             )
           )
-        ),
-        tabPanel("Learner-educator ratio",
-                 leafletOutput("chloro"),
-                 absolutePanel(
-                   bottom = 10,
-                   left = 10,
-                   box(
-                     width = 12,
-                     status = "warning",
-                     collapsible = TRUE,
-                     checkboxGroupInput(
-                       "field_of_work_2",
-                       "Field of work",
-                       choices =  fields,
-                       selected = fields
-                     )
-                   )
-                 ))
-      ))
     )
   ),
   fluidRow(
@@ -827,10 +951,7 @@ server <- function(input, output) {
 
   # Map
   selectedData <- reactive({
-    selectedData <- clean_data %>%
-      filter_all(any_vars(str_detect(
-        ., paste(input$field_of_work, collapse = "|")
-      )))
+    selectedData <- clean_data 
   })
   
   info_data <- reactive({
@@ -855,33 +976,40 @@ server <- function(input, output) {
     )
   })
   
-  output$map <- renderLeaflet({
-    leaflet() %>%
-      addTiles() %>%
-      addMarkers(
-        lng = as.numeric(coordDF_1()$Longitude),
-        lat = as.numeric(coordDF_1()$Latitude),
-        popup = info()
-      )
+  observeEvent(input$map_type, {
+    if(input$map_type=="basic"){
+    output$map <- renderLeaflet({
+      leaflet() %>%
+        addTiles() %>%
+        addMarkers(
+          lng = as.numeric(coordDF_1()$Longitude),
+          lat = as.numeric(coordDF_1()$Latitude),
+          popup = info()
+        )
+    })
+    }
   })
- 
+
   
-  # Chloropleth
+  
+  
+  
+  
+  
+  
+  # Chloropleth ####
   selectedData_2 <- reactive({
-    selectedData_2 <- clean_data %>%
-      filter_all(any_vars(str_detect(
-        ., paste(input$field_of_work_2, collapse = "|")
-      )))
+    selectedData_2 <- clean_data 
   })
-  
+
   info_data_2 <- reactive({
     selectedData_2()[, c(1, 3:5)]
   })
-  
+
   coordDF_2 <- reactive({
     merge(coordDF, info_data_2())
   })
-  
+
   info_2 <- reactive({
     paste(
       sep = "<br/>",
@@ -895,17 +1023,69 @@ server <- function(input, output) {
       paste("Est.", coordDF_2()$established)
     )
   })
-  
-  
-  output$chloro <- renderLeaflet({
-  chloro %>%
+
+  observeEvent(input$map_type,{
+    if(input$map_type=="crime"){
+  output$map <- renderLeaflet({
+  crime_chloro %>%
     addMarkers(
         lng = as.numeric(coordDF_2()$Longitude),
         lat = as.numeric(coordDF_2()$Latitude),
         popup = info_2()
       )
   })
-  
+    }
+    if(input$map_type=="hospital"){
+      output$map <- renderLeaflet({
+        RateHospital_chloro %>%
+          addMarkers(
+            lng = as.numeric(coordDF_2()$Longitude),
+            lat = as.numeric(coordDF_2()$Latitude),
+            popup = info_2()
+          )
+      })
+    }
+    if(input$map_type=="toilet"){
+      output$map <- renderLeaflet({
+        RateToilet_chloro %>%
+          addMarkers(
+            lng = as.numeric(coordDF_2()$Longitude),
+            lat = as.numeric(coordDF_2()$Latitude),
+            popup = info_2()
+          )
+      })
+    }
+    if(input$map_type=="water"){
+      output$map <- renderLeaflet({
+        RateWater_chloro %>%
+          addMarkers(
+            lng = as.numeric(coordDF_2()$Longitude),
+            lat = as.numeric(coordDF_2()$Latitude),
+            popup = info_2()
+          )
+      })
+    }
+    if(input$map_type=="police"){
+      output$map <- renderLeaflet({
+        RatePolice_chloro %>%
+          addMarkers(
+            lng = as.numeric(coordDF_2()$Longitude),
+            lat = as.numeric(coordDF_2()$Latitude),
+            popup = info_2()
+          )
+      })
+    }
+    if(input$map_type=="school"){
+      output$map <- renderLeaflet({
+        RateSchool_chloro %>%
+          addMarkers(
+            lng = as.numeric(coordDF_2()$Longitude),
+            lat = as.numeric(coordDF_2()$Latitude),
+            popup = info_2()
+          )
+      })
+    }
+  })
   
   # Wordcloud
   output$wordcloud <- renderPlot({
