@@ -48,7 +48,7 @@ myfunc <- function(v1) {
 number_data_vector <-
   as.character(seq(from = 0, to = 2000)) # Setting limit to 2000
 survey_data_cut <-
-  survey_data[,-c(1:5)] # Done to prevent year or name fields being counted
+  survey_data[, -c(1:5)] # Done to prevent year or name fields being counted
 
 
 # Abbreviated dataset that is the first four variables (they always fill the same cells) ####
@@ -251,8 +251,8 @@ list <- mapply(function(z, y) {
     select(obs, everything())
   
   shouldChange <- z
-  shouldChange[, -1] <-
-    sapply(z[,-1], function(x)
+  shouldChange[,-1] <-
+    sapply(z[, -1], function(x)
       x %nin% y) # Identify cells that need to be made blank
   
   var_list <- names(z)
@@ -459,7 +459,7 @@ municipalities_colnames <- colnames(municipalities)
 
 # Merge back into clean dataset with coordinates
 clean_data <-
-  clean_data[, -which(names(clean_data) %in% municipalities_colnames)]
+  clean_data[,-which(names(clean_data) %in% municipalities_colnames)]
 clean_data <-
   merge(clean_data, municipCoord, by = "obs", .keep_all = TRUE)
 
@@ -480,7 +480,7 @@ splitMunicip <- lapply(splitMunicip, setNames, colnames)
 
 coordDF <- bind_rows(splitMunicip)
 coordDF <-
-  coordDF[rowSums(is.na(coordDF)) == 0,]     # Remove empty rows
+  coordDF[rowSums(is.na(coordDF)) == 0, ]     # Remove empty rows
 
 ### ###### ###### ###### ###### ###### ###### ###### ###### ###### ###
 # Learner:educator chloropleth data preparation ####
@@ -543,7 +543,8 @@ labels <- sprintf(
   mapdata$Ratio
 ) %>% lapply(htmltools::HTML)
 
-mapdata <- rmapshaper::ms_simplify(mapdata, keep = 0.05, keep_shapes = TRUE)
+mapdata <-
+  rmapshaper::ms_simplify(mapdata, keep = 0.05, keep_shapes = TRUE)
 
 # Create the map
 chloro <- leaflet() %>%
@@ -575,19 +576,24 @@ chloro <- leaflet() %>%
     values = mapdata$Ratio,
     opacity = 0.7,
     position = "bottomright"
-  ) 
+  )
 
 ### ###### ###### ###### ###### ###### ###### ###### ###### ###### ###
 # Community data chloropleth ####
 ### ###### ###### ###### ###### ###### ###### ###### ###### ###### ###
-community_cleaned <- read.csv("~/Firdale Consulting/NGO-survey-dashboard/Municipality map/community_cleaned.csv") %>%
+community_cleaned <-
+  read.csv(
+    "~/Firdale Consulting/NGO-survey-dashboard/Municipality map/community_cleaned.csv"
+  ) %>%
   mutate(Municipality = tolower(Municipality)) %>%
-  mutate(Crime = Crime*10)
-community_cleaned$Municipality <- tolower(community_cleaned$Municipality) 
+  mutate(Crime = Crime * 10)
+community_cleaned$Municipality <-
+  tolower(community_cleaned$Municipality)
 
 
 # Merge datasets
-community_map <- left_join(bounds, community_cleaned, by = "Municipality")
+community_map <-
+  left_join(bounds, community_cleaned, by = "Municipality")
 
 
 # Create bins
@@ -635,7 +641,7 @@ crime_chloro <- leaflet() %>%
     values = community_map$Crime,
     opacity = 0.7,
     position = "bottomright"
-  ) 
+  )
 
 crime_chloro
 
@@ -684,7 +690,7 @@ RateHospital_chloro <- leaflet() %>%
     values = community_map$RateHospital,
     opacity = 0.7,
     position = "bottomright"
-  ) 
+  )
 
 RateHospital_chloro
 
@@ -734,7 +740,7 @@ RateToilet_chloro <- leaflet() %>%
     values = community_map$RateToilet,
     opacity = 0.7,
     position = "bottomright"
-  ) 
+  )
 
 RateToilet_chloro
 
@@ -744,7 +750,7 @@ RateToilet_chloro
 ### ###### ###### ###### ###### ###### ###### ###### ###### ###### ###
 
 # Create vector containing all Fields in the dataset
-fields_unique <- as.vector(as.matrix(field_data[, -c(1)]))
+fields_unique <- as.vector(as.matrix(field_data[,-c(1)]))
 fields <- unique(fields_unique)
 fields <- fields[!is.na(fields)]
 
@@ -753,7 +759,7 @@ fields <- fields[!is.na(fields)]
 
 
 ui <- dashboardPage(
-  dashboardHeader(title = "Survey Results"), 
+  dashboardHeader(title = "Survey Results"),
   dashboardSidebar(disable = TRUE),
   dashboardBody(fluidRow(
     box(
@@ -783,23 +789,25 @@ ui <- dashboardPage(
             )
           )
         ),
-        tabPanel("Learner-educator ratio",
-                 leafletOutput("chloro"),
-                 absolutePanel(
-                   bottom = 10,
-                   left = 10,
-                   box(
-                     width = 12,
-                     status = "warning",
-                     collapsible = TRUE,
-                     checkboxGroupInput(
-                       "field_of_work_2",
-                       "Field of work",
-                       choices =  fields,
-                       selected = fields
-                     )
-                   )
-                 ))
+        tabPanel(
+          "Learner-educator ratio",
+          leafletOutput("chloro"),
+          absolutePanel(
+            bottom = 10,
+            left = 10,
+            box(
+              width = 12,
+              status = "warning",
+              collapsible = TRUE,
+              checkboxGroupInput(
+                "field_of_work_2",
+                "Field of work",
+                choices =  fields,
+                selected = fields
+              )
+            )
+          )
+        )
       ))
     )
   ),
@@ -811,20 +819,38 @@ ui <- dashboardPage(
       collapsible = TRUE,
       plotOutput("wordcloud", width = "100%")
     ),
-    box(title = "Focus areas", status = "primary", solidHeader = TRUE,
-        collapsible = TRUE, plotOutput("focus_plot"), 
-        absolutePanel(top = 60, right = 20, checkboxGroupInput(
+    box(
+      title = "Focus areas",
+      status = "primary",
+      solidHeader = TRUE,
+      collapsible = TRUE,
+      plotOutput("focus_plot"),
+      absolutePanel(
+        top = 60,
+        right = 20,
+        checkboxGroupInput(
           "organization",
           "Type of organization",
-          choices =  c("NGO"="ngo", "Donor"="donor", "Social impact investor"="sia"),
-          selected = c("NGO"="ngo", "Donor"="donor", "Social impact investor"="sia")))))
-))
+          choices =  c(
+            "NGO" = "ngo",
+            "Donor" = "donor",
+            "Social impact investor" = "sia"
+          ),
+          selected = c(
+            "NGO" = "ngo",
+            "Donor" = "donor",
+            "Social impact investor" = "sia"
+          )
+        )
+      )
+    )
+  ))
+)
 
 
 
 # Define server logic ####
 server <- function(input, output) {
-
   # Map
   selectedData <- reactive({
     selectedData <- clean_data %>%
@@ -898,8 +924,8 @@ server <- function(input, output) {
   
   
   output$chloro <- renderLeaflet({
-  chloro %>%
-    addMarkers(
+    chloro %>%
+      addMarkers(
         lng = as.numeric(coordDF_2()$Longitude),
         lat = as.numeric(coordDF_2()$Latitude),
         popup = info_2()
@@ -942,7 +968,7 @@ server <- function(input, output) {
     )
   })
   
-# Focus area plot
+  # Focus area plot
   # Filter data
   selectedData_3 <- reactive({
     clean_data %>%
@@ -950,7 +976,7 @@ server <- function(input, output) {
         ., paste(input$organization, collapse = "|")
       )))
   })
-
+  
   
   # Shape data
   focus_data <- reactive({
@@ -958,35 +984,44 @@ server <- function(input, output) {
       select(obs, grep("Field", names(selectedData_3()))) %>%
       gather(., Column, Focus, 2:ncol(.)) %>%
       na.omit() %>%
-      select(Focus) 
+      select(Focus)
     
     focus_data <- as.data.frame(table(focus_data$Focus))
-    focus_data <-  mutate(focus_data, pct = round(((focus_data$Freq/nrow(focus_data))*100),1))
+    focus_data <-
+      mutate(focus_data, pct = round(((
+        focus_data$Freq / nrow(focus_data)
+      ) * 100), 1))
   })
   
   
   output$focus_plot <- renderPlot({
     validate(need(nrow(selectedData_3()) > 0, "No data for this selection"))
     
-    max_prop <- round((max(focus_data()$pct) + 15)) 
-   plot <-  ggplot(focus_data(), aes(Var1, pct)) + geom_bar(stat = 'identity', fill="grey") +
-      scale_y_continuous("", limits = c(0,max_prop)) + 
-      scale_x_discrete("",
+    max_prop <- round((max(focus_data()$pct) + 15))
+    plot <-
+      ggplot(focus_data(), aes(Var1, pct)) + geom_bar(stat = 'identity', fill =
+                                                        "grey") +
+      scale_y_continuous("", limits = c(0, max_prop)) +
+      scale_x_discrete(
+        "",
         labels = function(labels) {
           sapply(seq_along(labels), function(i)
             paste0(ifelse(i %% 2 == 0, '', '\n'), labels[i]))
-        }) +
+        }
+      ) +
       geom_text(
         aes(label = paste0(pct, "%")),
         vjust = 1.6,
         color = "black",
         size = 3.5
-      ) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-                panel.background = element_blank())
-   plot
+      ) + theme(
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank()
+      )
+    plot
   })
 }
 
 # Run the application
 shinyApp(ui = ui, server = server)
-
