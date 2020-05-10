@@ -20,8 +20,9 @@ library(scales)
 library(timevis)
 
 library(sf)
-library(rgdal)
+
 library(dplyr)
+library(raster)
 
 
 
@@ -33,6 +34,9 @@ library(dplyr)
 # 6. Change to lollipop chart
 # 7. Remove the word cloud
 # 8. Send megan the colour scheme. 
+# 9. Make map box longer and add in survey info there.
+# 10. Include Firdale Consulting in header. Try on the right, with logo. 
+# 11. Hoverplot the lollipop plot with the organisation names and website hyperlink.
 
 survey_data <-
   gs_key("1bnWcFKSQZo5aMOd_9BdjQIt_W4iMjWvzMODOoepLq6k") %>%
@@ -66,7 +70,7 @@ first_answers <- survey_data[, 1:4]
 first_answers$obs <- as.character(1:nrow(survey_data))
 #first_answers$obs <- paste("", first_answers$obs)
 first_answers <- first_answers %>%
-  select(obs, everything())
+  dplyr::select(obs, everything())
 names(first_answers) <-
   c("obs", "ngo_or_donor", "name", "established", "website")
 
@@ -258,7 +262,7 @@ list <- mapply(function(z, y) {
   z <-
     z[!duplicated(as.list(z))]
   z <- z %>%
-    select(obs, everything())
+    dplyr::select(obs, everything())
   
   shouldChange <- z
   shouldChange[, -1] <-
@@ -588,29 +592,14 @@ coordDF <-
 #   ) 
 
 ### ###### ###### ###### ###### ###### ###### ###### ###### ###### ###
-# Community data chloropleth ####
+  # Community data chloropleth ####
 ### ###### ###### ###### ###### ###### ###### ###### ###### ###### ###
-community_cleaned <- read.csv("community_cleaned.csv") %>%
-  mutate(Municipality = tolower(Municipality)) %>%
-  mutate(Crime = Crime*10)
-community_cleaned$Municipality <- tolower(community_cleaned$Municipality)
-
-# bounds <- readOGR("./2016-Boundaries-Local", layer = "Local_Municipalities_2016", encoding = 'UTF-8')
-# bounds <- spTransform(bounds, CRS("+init=epsg:4326"))
-# 
-# bounds <- rmapshaper::ms_simplify(bounds, keep = 0.05, keep_shapes = TRUE)
-# 
-# bounds$MUNICNAME <- tolower(bounds$MUNICNAME)
-# bounds$MUNICNAME <- gsub("municipality", "", bounds$MUNICNAME)
-# bounds$MUNICNAME <- trimws(bounds$MUNICNAME)
-# colnames(bounds[[1]])[6] <- "Municipality"
-
-
+community_cleaned <- read.csv("community_cleaned.csv", header = TRUE) 
 
 # Shape file
 bounds <-
-  sf::read_sf(
-    "./2016-Boundaries-Local/Local_Municipalities_2016.shp"
+  sf::st_read(
+    "Local_Municipalities_2016.shp"
   )
 bounds$MUNICNAME <- tolower(bounds$MUNICNAME)
 bounds$MUNICNAME <- gsub("municipality", "", bounds$MUNICNAME)
@@ -925,7 +914,7 @@ fields <- fields[!is.na(fields)]
 
 
 # Define UI for application ####
-
+#636466
 
 ui <- dashboardPage(skin = "blue",
   dashboardHeader(
@@ -934,13 +923,13 @@ ui <- dashboardPage(skin = "blue",
   dashboardBody(fluidRow(
     tags$style(HTML(".box.box-solid.box-primary>.box-header {
                                 color:#FFFFFF;
-                    background-color:#6E876C;}
+                    background-color:#636466;}
 
                     .box.box-solid.box-primary{
-                    border-bottom-color:#6E876C;
-                    border-left-color:#6E876C;
-                    border-right-color:#6E876C;
-                    border-top-color:#6E876C;
+                    border-bottom-color:#636466;
+                    border-left-color:#636466;
+                    border-right-color:#636466;
+                    border-top-color:#636466;
                     }
                     .skin-blue .main-header .logo {
                       background-color: #6E876C;
@@ -948,17 +937,17 @@ ui <- dashboardPage(skin = "blue",
                     
                     /* logo when hovered */
                       .skin-blue .main-header .logo:hover {
-                        background-color: #6E876C;
+                        background-color: #636466;
                       }
                     
                     /* navbar (rest of the header) */
                       .skin-blue .main-header .navbar {
-                        background-color: #6E876C;
+                        background-color: #636466;
                       }        
                     
                     /* main sidebar */
                       .skin-blue .main-sidebar {
-                        background-color: #f4b943;
+                        background-color: #636466;
                       }
                     
                     /* active selected tab in the sidebarmenu */
@@ -974,11 +963,11 @@ ui <- dashboardPage(skin = "blue",
                     
                     /* other links in the sidebarmenu when hovered */
                       .skin-blue .main-sidebar .sidebar .sidebar-menu a:hover{
-                        background-color: #f4b943;
+                        background-color: #636466;
                       }
                     /* toggle button when hovered  */                    
                       .skin-blue .main-header .navbar .sidebar-toggle:hover{
-                        background-color: #f4b943;
+                        background-color: #636466;
                       }
                     "
                     )),
@@ -986,22 +975,14 @@ ui <- dashboardPage(skin = "blue",
       title = "Survey respondent locations",
       status = "primary",
       solidHeader = TRUE,
-      width = 12,
+      width = 12, height = 510,
       collapsible = F,
           leafletOutput(outputId = "map"),
-      absolutePanel(
-        bottom = 30, right = 5,
-        box(status = "primary", width = 12,
-          p("Survey respondents rated delivery of each service:"), p("1 - No delivery,  
-            2 - Poor,  3 - Average,  4 - Good")
-        )
-      ),
           absolutePanel(
-            bottom = 25,
+            bottom = 60,
             left = 10,
             box(
               width = 12,
-              status = "primary",
               collapsible = FALSE,
               radioButtons(
                 "map_type",
@@ -1013,7 +994,9 @@ ui <- dashboardPage(skin = "blue",
                 selected = "basic"
               )
             )
-          ), p("Source: Community Survey 2016 (StatsSA)")
+          ), p("Source: Community Survey 2016 (StatsSA)"), 
+      p("Survey respondents rated delivery of each service: 1 - No delivery; 
+        2 - Poor; 3 - Average; 4 - Good")
     )
   ),
   fluidRow(
@@ -1032,6 +1015,7 @@ ui <- dashboardPage(skin = "blue",
           choices =  c("NGO"="ngo", "Donor"="donor", "Social impact investor"="sia"),
           selected = c("NGO"="ngo")))))
 ))
+
 
 
 
@@ -1086,7 +1070,7 @@ server <- function(input, output) {
   
   
   
-  # # Chloropleth ####
+  # # # Chloropleth ####
   selectedData_2 <- reactive({
     selectedData_2 <- clean_data
   })
@@ -1175,7 +1159,7 @@ server <- function(input, output) {
       })
     }
   })
-  
+
   # Wordcloud ####
   output$wordcloud <- renderPlot({
     docs <- Corpus(VectorSource(clean_data$Service))
@@ -1222,10 +1206,10 @@ server <- function(input, output) {
   # Shape data 
   focus_data <- reactive({
     focus_data <- selectedData_3() %>%
-      select(obs, grep("Field", names(selectedData_3()))) %>%
+      dplyr::select(obs, grep("Field", names(selectedData_3()))) %>%
       gather(., Column, Focus, 2:ncol(.)) %>%
       na.omit() %>%
-      select(Focus) 
+      dplyr::select(Focus) 
     
     focus_data <- as.data.frame(table(focus_data$Focus))
     focus_data <-  mutate(focus_data, pct = focus_data$Freq)
