@@ -15,7 +15,8 @@
 # 7. Need to prevent na and genders from being filled
 
 
-
+# 1. Link submit button to dashboard url
+# 2. Write blurb introducing survey, also asking if its alright if the data should 
 
 # Survey
 
@@ -26,7 +27,7 @@ library("DT")
 library(readxl)
 library(shinyjs)
 library(shinyWidgets)
-
+library(V8)
 
 # Get shiny token to access google drive
 # shiny_token <- gs_auth()
@@ -46,14 +47,14 @@ fields <-
     "Advocacy & Awareness",
     "Culture & Society",
     "Democracy & Civic Rights",
-    "Disability & Handicap",
+    "Disability",
     "Displaced Population & Refugees",
     "Education",
     "Environment",
     "Family Care",
     "Health",
     "Human Rights",
-    "Labor",
+    "Labour",
     "Law & Legal Affairs",
     "Rural Development",
     "Science & Technology",
@@ -67,7 +68,7 @@ priorities <-
     "Growing our team",
     "Upskilling our team",
     "Securing new equipment/venues",
-    "Expanding our organization's scope",
+    "Expanding our organisation's scope",
     "Building relationship with funders",
     "Recruiting volunteers",
     "Securing funding",
@@ -88,7 +89,8 @@ appCSS <- ".mandatory_star { color: red; }"
 
 # UI
 ui <-
-  fluidPage(setBackgroundColor("#ADD8E6"),
+  #fluidPage(setBackgroundColor("#ADD8E6"),
+  fluidPage(setBackgroundColor("#6E876C"),
     shinyjs::useShinyjs(),
     shinyjs::inlineCSS(appCSS),
     fluidRow(column(12, offset = 5, 
@@ -126,7 +128,7 @@ ui <-
                               selectInput(
                                 "field",
                                 "5. Field of work",
-                                choices = c("Select from the list" = "", fields),
+                                choices = c("Select up to 5 from the list" = "", fields),
                                 multiple = TRUE
                               )
                             )
@@ -135,7 +137,7 @@ ui <-
                             conditionalPanel(
                               condition = "input.ngo_or_donor == 'donor' || input.ngo_or_donor == 'sia'",
                               selectInput(
-                                "field",
+                                "field_2",
                                 "5. Main fields of focus",
                                 choices = c("Select from the list" = "", fields),
                                 multiple = TRUE
@@ -165,68 +167,11 @@ ui <-
                             condition = "input.country.indexOf('South Africa')>-1",
                             selectInput(
                               "municipality",
-                              "6a. List up to 10 South African villages, towns, or cities where your organisation mainly operates",
-                              c("Select places of operation" = "", SouthAfricanCities$AccentCity),
+                              "6a. South African villages, towns, or cities where your organisation mainly operates",
+                              c("Select up to 10" = "", SouthAfricanCities$AccentCity),
                               multiple = TRUE
                             )
                           ),
-                          # fluidRow(
-                          #   conditionalPanel(
-                          #     condition = "input.ngo_or_donor == 'ngo'",
-                          #     numericInput(
-                          #       "perm_employees",
-                          #       "7. Number of permanent employees",
-                          #       0,
-                          #       min = 0,
-                          #       max = 2000
-                          #     )
-                          #   )),
-                          #   fluidRow(
-                          #   conditionalPanel(
-                          #     condition = "input.ngo_or_donor == 'ngo'",
-                          #     numericInput(
-                          #       "temp_employees",
-                          #       "8. Number of temporary employees",
-                          #       0,
-                          #       min = 0,
-                          #       max = 2000
-                          #     )
-                          #   )),
-                          # fluidRow(
-                          #   conditionalPanel(
-                          #     condition = "input.ngo_or_donor == 'ngo'",
-                          #     numericInput(
-                          #       "volunteers",
-                          #       "9. Number of volunteers",
-                          #       0,
-                          #       min = 0,
-                          #       max = 2000
-                          #     )
-                          #   )),
-                          # fluidRow(
-                          #   conditionalPanel(
-                          #     condition = "input.ngo_or_donor == 'ngo'",
-                          #     checkboxGroupInput(
-                          #       "target_gender",
-                          #       "10. Targetted gender(s)",
-                          #       choices = c(
-                          #         "Male" = "male",
-                          #         "Female" = "female",
-                          #         "Not applicable" = "na"
-                          #       )
-                          #     )
-                          #   )),
-                          # fluidRow(
-                          #   conditionalPanel(
-                          #     condition = "input.ngo_or_donor == 'ngo'",
-                          #     sliderInput(
-                          #       "target_age",
-                          #       "11. Targetted age range",
-                          #       min = 0,
-                          #       max = 100,
-                          #       value = c(0, 20)
-                          #     )
-                          #   )),
                           fluidRow(
                             conditionalPanel(
                               condition = "input.ngo_or_donor == 'ngo'",
@@ -241,7 +186,7 @@ ui <-
                               selectInput(
                                 "priorities",
                                 "8. Next year, your organization is prioritising:",
-                                choices = c("Select from the list" = "", priorities),
+                                choices = c("Select any that apply" = "", priorities),
                                 multiple = TRUE
                               )
                             )),
@@ -287,31 +232,6 @@ ui <-
 
 # Server
 server <- function(input, output, session) {
-  # observeEvent(input$province, {
-  #   ## Update possible towns depending on province selected
-  #   updateSelectInput(session,
-  #                     'municipality',
-  #                     choices = unique(SouthAfricanCities$AccentCity[SouthAfricanCities$ProvinceName ==
-  #                                                                      input$province]))
-  # })
-  # observeEvent(input$target_gender=="na", {
-  #   updateCheckboxGroupInput(session, "target_gender",
-  #                            selected = )
-  # 
-  # })
-
-  
-  
-  # observe({
-  #   shinyjs::toggleState("province", input$country == "South Africa")
-  #   shinyjs::toggleState("municipality", input$country == "South Africa")
-  # })
-  # observe({
-  #   shinyjs::toggleState("target_age",
-  #                        input$target_gender == "male" ||
-  #                          input$target_gender == "female")
-  # })
-  # 
   results <- reactive(
     c(
       input$ngo_or_donor,
@@ -319,14 +239,10 @@ server <- function(input, output, session) {
       input$established,
       input$website,
       input$field,
+      input$field_2,
       paste0("other_description", sep = "_", input$other_description),
       input$country,
       paste0("municipality", sep = "_", input$municipality),
-      # input$perm_employees,
-      # input$temp_employees,
-      # input$volunteers,
-      # paste0("age", sep = "_", input$target_age),
-      # input$target_gender,
       paste0("service", sep = "_", input$service),
       input$priorities,
       input$evaluated,
@@ -339,11 +255,10 @@ server <- function(input, output, session) {
       gs_add_row(ws = "Survey", input = results())
   })
   observeEvent(input$submit, {
-    showNotification("Response successfully submitted", type = "message")
+    showNotification("Response successfully submitted. Thanks for filling out our form!", type = "message")
   })
   observeEvent(input$submit, {
-    js$refresh()
-    
+    delay(5000, js$refresh())   ## Delay so that the message stays for 5 secs, then refreshes.
   })
   observe({
     mandatoryFilled <-
