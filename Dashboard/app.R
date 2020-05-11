@@ -9,6 +9,7 @@ library(tidyverse)
 library(stringr)
 library(shinydashboard)
 library(ggplot2)
+library(plotly)
 library(tm)
 library(SnowballC)
 library(wordcloud)
@@ -25,40 +26,58 @@ library(dplyr)
 library(raster)
 
 # Loading logo function ####
-loadingLogo <- function(href, src, loadingsrc, height = 40, width = 40, alt = NULL) {
-  tagList(
-    tags$head(
+loadingLogo <-
+  function(href,
+           src,
+           loadingsrc,
+           height = 40,
+           width = 40,
+           alt = NULL) {
+    tagList(tags$head(
       tags$script(
         "setInterval(function(){
-                     if ($('html').attr('class')=='shiny-busy') {
-                     $('div.busy').show();
-                     $('div.notbusy').hide();
-                     } else {
-                     $('div.busy').hide();
-                     $('div.notbusy').show();
-           }
-         },100)")
+        if ($('html').attr('class')=='shiny-busy') {
+        $('div.busy').show();
+        $('div.notbusy').hide();
+        } else {
+        $('div.busy').hide();
+        $('div.notbusy').show();
+        }
+  },100)"
+)
     ),
-    tags$a(href=href,
-           div(class = "busy",  
-               img(src=loadingsrc,height = height, width = width, alt = alt)),
-           div(class = 'notbusy',
-               img(src = src, height = height, width = width, alt = alt))
-    )
-  )
-}
+tags$a(href = href,
+       div(
+         class = "busy",
+         img(
+           src = loadingsrc,
+           height = height,
+           width = width,
+           alt = alt
+         )
+       ),
+       div(
+         class = 'notbusy',
+         img(
+           src = src,
+           height = height,
+           width = width,
+           alt = alt
+         )
+       )))
+    }
 
 
 # 1. Move none to the end of the maps
-# 2. Add data source and describe what the data is. 
-# 3. Remove tick labels 
+# 2. Add data source and describe what the data is.
+# 3. Remove tick labels
 # 4. Change organization to organisation
 # 5. Change title to "Organisation focus areas"
 # 6. Change to lollipop chart
 # 7. Remove the word cloud
-# 8. Send megan the colour scheme. 
+# 8. Send megan the colour scheme.
 # 9. Make map box longer and add in survey info there.
-# 10. Include Firdale Consulting in header. Try on the right, with logo. 
+# 10. Include Firdale Consulting in header. Try on the right, with logo.
 # 11. Hoverplot the lollipop plot with the organisation names and website hyperlink.
 
 survey_data <-
@@ -85,7 +104,7 @@ myfunc <- function(v1) {
 number_data_vector <-
   as.character(seq(from = 0, to = 2000)) # Setting limit to 2000
 survey_data_cut <-
-  survey_data[,-c(1:5)] # Done to prevent year or name fields being counted
+  survey_data[, -c(1:5)] # Done to prevent year or name fields being counted
 
 
 # Abbreviated dataset that is the first four variables (they always fill the same cells) ####
@@ -288,8 +307,8 @@ list <- mapply(function(z, y) {
     dplyr::select(obs, everything())
   
   shouldChange <- z
-  shouldChange[, -1] <-
-    sapply(z[,-1], function(x)
+  shouldChange[,-1] <-
+    sapply(z[, -1], function(x)
       x %nin% y) # Identify cells that need to be made blank
   
   var_list <- names(z)
@@ -496,7 +515,7 @@ municipalities_colnames <- colnames(municipalities)
 
 # Merge back into clean dataset with coordinates
 clean_data <-
-  clean_data[, -which(names(clean_data) %in% municipalities_colnames)]
+  clean_data[,-which(names(clean_data) %in% municipalities_colnames)]
 clean_data <-
   merge(clean_data, municipCoord, by = "obs", .keep_all = TRUE)
 
@@ -517,7 +536,7 @@ splitMunicip <- lapply(splitMunicip, setNames, colnames)
 
 coordDF <- bind_rows(splitMunicip)
 coordDF <-
-  coordDF[rowSums(is.na(coordDF)) == 0,]     # Remove empty rows
+  coordDF[rowSums(is.na(coordDF)) == 0, ]     # Remove empty rows
 
 ### ###### ###### ###### ###### ###### ###### ###### ###### ###### ###
 # Learner:educator chloropleth data preparation ####
@@ -527,7 +546,7 @@ coordDF <-
 #   st_read(
 #     "Local_Municipalities_2016.shp"
 #   )
-# # 
+# #
 # # Get the municipality average learner:teacher ratio
 # school_data <-
 #   read.csv(
@@ -542,7 +561,7 @@ coordDF <-
 #   select(LMunName, ave_ratio) %>%
 #   na.omit() %>%
 #   distinct(LMunName, .keep_all = TRUE)
-# 
+#
 # school_data$LMunName <- tolower(school_data$LMunName)
 # school_data$LMunName <-
 #   gsub("local municipality", "", school_data$LMunName)
@@ -552,21 +571,21 @@ coordDF <-
 #   gsub("municipality", "", school_data$LMunName)
 # school_data$LMunName <- trimws(school_data$LMunName)
 # colnames(school_data) <- c("Municipality", "Ratio")
-# 
+#
 # bounds$MUNICNAME <- tolower(bounds$MUNICNAME)
 # bounds$MUNICNAME <- gsub("municipality", "", bounds$MUNICNAME)
 # bounds$MUNICNAME <- trimws(bounds$MUNICNAME)
 # colnames(bounds)[6] <- "Municipality"
-# 
-# 
+#
+#
 # # Merge the two datasets
 # mapdata <- left_join(bounds, school_data, by = "Municipality")
-# 
+#
 # # Create bins
 # bins <-
 #   c(6, 10, 11, 15, 16, 20, 21, 25, 26, 30, 31, 35, 36, 40)
 # pal <- colorBin("YlOrRd", domain = mapdata$Ratio, bins = bins)
-# 
+#
 # # Add labels
 # mapdata$Municipality <-
 #   gsub("(?<=\\b)([a-z])",
@@ -579,9 +598,9 @@ coordDF <-
 #   mapdata$Municipality,
 #   mapdata$Ratio
 # ) %>% lapply(htmltools::HTML)
-# 
+#
 # mapdata <- rmapshaper::ms_simplify(mapdata, keep = 0.05, keep_shapes = TRUE)
-# 
+#
 # # Create the map
 # chloro <- leaflet() %>%
 #   addTiles() %>%
@@ -612,25 +631,25 @@ coordDF <-
 #     values = mapdata$Ratio,
 #     opacity = 0.7,
 #     position = "topright"
-#   ) 
+#   )
 
 ### ###### ###### ###### ###### ###### ###### ###### ###### ###### ###
-  # Community data chloropleth ####
+# Community data chloropleth ####
 ### ###### ###### ###### ###### ###### ###### ###### ###### ###### ###
-community_cleaned <- read.csv("community_cleaned.csv", header = TRUE) 
+community_cleaned <-
+  read.csv("community_cleaned.csv", header = TRUE)
 
 # Shape file
 bounds <-
-  sf::st_read(
-    "Local_Municipalities_2016.shp"
-  )
+  sf::st_read("Local_Municipalities_2016.shp")
 bounds$MUNICNAME <- tolower(bounds$MUNICNAME)
 bounds$MUNICNAME <- gsub("municipality", "", bounds$MUNICNAME)
 bounds$MUNICNAME <- trimws(bounds$MUNICNAME)
 colnames(bounds)[6] <- "Municipality"
 
 # Merge datasets
-community_map <- left_join(bounds, community_cleaned, by = "Municipality")
+community_map <-
+  left_join(bounds, community_cleaned, by = "Municipality")
 
 # _Crime ####
 # Create bins
@@ -648,7 +667,8 @@ labels <- sprintf(
   community_map$Crime
 ) %>% lapply(htmltools::HTML)
 
-community_map <- rmapshaper::ms_simplify(community_map, keep = 0.05, keep_shapes = TRUE)
+community_map <-
+  rmapshaper::ms_simplify(community_map, keep = 0.05, keep_shapes = TRUE)
 
 # Create the map
 crime_chloro <- leaflet() %>%
@@ -682,9 +702,11 @@ crime_chloro <- leaflet() %>%
     position = "topright"
   )
 
-
 # _Hospital  ####
-pal <- colorBin("Greens", domain = community_map$RateHospital)
+pal <-
+  colorBin("Greens",
+           domain = community_map$RateHospital,
+           bins = c(1.6, 2, 2.5, 3, 3.5, 4))
 
 # Add labels
 community_map$Municipality <-
@@ -732,7 +754,10 @@ RateHospital_chloro <- leaflet() %>%
 
 
 # _Toilet ####
-pal <- colorBin("Greens", domain = community_map$RateToilet)
+pal <-
+  colorBin("Greens",
+           domain = community_map$RateToilet,
+           bins = c(2, 2.5, 3, 3.5, 4))
 
 # Add labels
 community_map$Municipality <-
@@ -741,7 +766,7 @@ community_map$Municipality <-
        tolower(community_map$Municipality),
        perl = TRUE)
 labels <- sprintf(
-  "<strong>%s</strong><br/>%g average toilet rating (out of 4)",
+  "<strong>%s</strong><br/>%g average sanitation/toilet rating (out of 4)",
   community_map$Municipality,
   community_map$RateToilet
 ) %>% lapply(htmltools::HTML)
@@ -779,7 +804,10 @@ RateToilet_chloro <- leaflet() %>%
   )
 
 # _Water ####
-pal <- colorBin("Greens", domain = community_map$RateWater)
+pal <-
+  colorBin("Greens",
+           domain = community_map$RateWater,
+           bins = c(2, 2.5, 3, 3.5, 4))
 
 # Add labels
 community_map$Municipality <-
@@ -828,7 +856,10 @@ RateWater_chloro <- leaflet() %>%
 RateWater_chloro
 
 # _Police ####
-pal <- colorBin("Greens", domain = community_map$RatePolice)
+pal <-
+  colorBin("Greens",
+           domain = community_map$RatePolice,
+           bins = c(2, 2.5, 3, 3.5, 4))
 
 # Add labels
 community_map$Municipality <-
@@ -878,7 +909,10 @@ RatePolice_chloro
 
 
 # _School ####
-pal <- colorBin("Greens", domain = community_map$RateSchool)
+pal <-
+  colorBin("Greens",
+           domain = community_map$RateSchool,
+           bins = c(2.5, 3, 3.5, 4))
 
 # Add labels
 community_map$Municipality <-
@@ -931,7 +965,7 @@ RateSchool_chloro <- leaflet() %>%
 ### ###### ###### ###### ###### ###### ###### ###### ###### ###### ###
 
 # Create vector containing all Fields in the dataset
-fields_unique <- as.vector(as.matrix(field_data[, -c(1)]))
+fields_unique <- as.vector(as.matrix(field_data[,-c(1)]))
 fields <- unique(fields_unique)
 fields <- fields[!is.na(fields)]
 
@@ -939,121 +973,156 @@ fields <- fields[!is.na(fields)]
 # Define UI for application ####
 #636466
 
-ui <- dashboardPage(skin = "blue",
+ui <- dashboardPage(
+  skin = "blue",
   dashboardHeader(
-    title = "South African Development Landscape",titleWidth = 450,
-    tags$li(a(href = 'https://firdaleconsulting.com',img(src = 'firdale_logo.png', 
-                                                         height="47px"),
-              style = "padding-top: 1px !important;
-              padding-bottom: 1px !important;padding-left:1px !important;
-              padding-right:10px !important;"),
-            class = "dropdown")),
+    title = "South African Development Landscape",
+    titleWidth = 450,
+    tags$li(
+      a(
+        href = 'https://firdaleconsulting.com',
+        img(src = 'firdale_logo.png',
+            height = "47px"),
+        style = "padding-top: 1px !important;
+        padding-bottom: 1px !important;padding-left:1px !important;
+        padding-right:10px !important;"
+      ),
+      class = "dropdown"
+      )
+    ),
   dashboardSidebar(disable = TRUE),
   dashboardBody(fluidRow(
-    tags$style(HTML(".box.box-solid.box-primary>.box-header {
-                                color:#FFFFFF;
-                    background-color:#636466;}
-
-                    .box.box-solid.box-primary{
-                    border-bottom-color:#636466;
-                    border-left-color:#636466;
-                    border-right-color:#636466;
-                    border-top-color:#636466;
-                    }
-                    .skin-blue .main-header .logo {
-                      background-color: #6E876C;
-                    }
-                    
-                    /* logo when hovered */
-                      .skin-blue .main-header .logo:hover {
-                        background-color: #636466;
-                      }
-                    
-                    /* navbar (rest of the header) */
-                      .skin-blue .main-header .navbar {
-                        background-color: #636466;
-                      }        
-                    
-                    /* main sidebar */
-                      .skin-blue .main-sidebar {
-                        background-color: #636466;
-                      }
-                    
-                    /* active selected tab in the sidebarmenu */
-                      .skin-blue .main-sidebar .sidebar .sidebar-menu .active a{
-                        background-color: #ff0000;
-                      }
-                    
-                    /* other links in the sidebarmenu */
-                      .skin-blue .main-sidebar .sidebar .sidebar-menu a{
-                        background-color: #00ff00;
-                          color: #000000;
-                      }
-                    
-                    /* other links in the sidebarmenu when hovered */
-                      .skin-blue .main-sidebar .sidebar .sidebar-menu a:hover{
-                        background-color: #636466;
-                      }
-                    /* toggle button when hovered  */                    
-                      .skin-blue .main-header .navbar .sidebar-toggle:hover{
-                        background-color: #636466;
-                      }
-                    "
-                    )),
+    tags$style(
+      HTML(
+        ".box.box-solid.box-primary>.box-header {
+        color:#FFFFFF;
+        background-color:#6E876C;}
+        
+        .box.box-solid.box-primary{
+        border-bottom-color:#6E876C;
+        border-left-color:#6E876C;
+        border-right-color:#6E876C;
+        border-top-color:#6E876C;
+        }
+        .skin-blue .main-header .logo {
+        background-color: #6E876C;
+        }
+        
+        /* logo when hovered */
+        .skin-blue .main-header .logo:hover {
+        background-color: #6E876C;
+        }
+        
+        /* navbar (rest of the header) */
+        .skin-blue .main-header .navbar {
+        background-color: #6E876C;
+        }
+        
+        /* main sidebar */
+        .skin-blue .main-sidebar {
+        background-color: #6E876C;
+        }
+        
+        /* active selected tab in the sidebarmenu */
+        .skin-blue .main-sidebar .sidebar .sidebar-menu .active a{
+        background-color: #ff0000;
+        }
+        
+        /* other links in the sidebarmenu */
+        .skin-blue .main-sidebar .sidebar .sidebar-menu a{
+        background-color: #00ff00;
+        color: #000000;
+        }
+        
+        /* other links in the sidebarmenu when hovered */
+        .skin-blue .main-sidebar .sidebar .sidebar-menu a:hover{
+        background-color: #6E876C;
+        }
+        /* toggle button when hovered  */
+        .skin-blue .main-header .navbar .sidebar-toggle:hover{
+        background-color: #6E876C;
+        }
+        "
+      )
+      ),
     box(
       title = "Survey respondent locations",
       status = "primary",
       solidHeader = TRUE,
-      width = 12, height = 510,
+      width = 12,
+      height = 480,
       collapsible = F,
-          leafletOutput(outputId = "map"),
-          absolutePanel(
-            bottom = 60,
-            left = 10,
-            box(
-              width = 12,
-              collapsible = FALSE,
-              radioButtons(
-                "map_type",
-                "See service delivery satifaction, by municipality",
-                choices =  c("Access to running water" = "water","Access to sanitation/toilets"=
-                               "toilet","Quality of nearest hospital"="hospital","Quality of nearest school"="school",
-                             "Quality of local police"=
-                               "police", "None"="basic"),
-                selected = "basic"
-              )
-            )
-          ), p("Source: Community Survey 2016 (StatsSA)"), 
-      p("Survey respondents rated delivery of each service: 1 - No delivery; 
-        2 - Poor; 3 - Average; 4 - Good")
-    )
-  ),
-  fluidRow(
-    # box(
-    #   title = "Word cloud of service provided",
-    #   status = "primary",
-    #   solidHeader = TRUE,
-    #   collapsible = TRUE,
-    #   plotOutput("wordcloud", width = "100%")
-    # ),
-    box(title = "Organisation focus areas", status = "primary", solidHeader = TRUE,
-        collapsible = F, width = 12, plotOutput("focus_plot"), 
-        absolutePanel(top = 60, right = 20, radioButtons(
-          "organization",
-          "Type of organisation",
-          choices =  c("NGO"="ngo", "Donor"="donor", "Social impact investor"="sia"),
-          selected = c("NGO"="ngo")))))
-))
+      leafletOutput(outputId = "map"),
+      absolutePanel(
+        bottom = 20,
+        left = 10,
+        box(
+          width = 12,
+          collapsible = FALSE,
+          radioButtons(
+            "map_type",
+            "See service delivery satifaction, by municipality",
+            choices =  c(
+              "Access to running water" = "water",
+              "Access to sanitation/toilets" =
+                "toilet",
+              "Quality of nearest hospital" = "hospital",
+              "Quality of nearest school" = "school",
+              "Quality of local police" =
+                "police",
+              "None" = "basic"
+            ),
+            selected = "basic"
+          ),
+          p("Survey respondents rated delivery of each service:"),
+          p("1 No delivery;
+            2 Poor;  3 Average;  4 Good")
+          )
+        ),
+      p("Source: Community Survey 2016 (StatsSA)")
+      )
+      ),
+    fluidRow(
+      # box(
+      #   title = "Word cloud of service provided",
+      #   status = "primary",
+      #   solidHeader = TRUE,
+      #   collapsible = TRUE,
+      #   plotOutput("wordcloud", width = "100%")
+      # ),
+      box(
+        title = "Survey respondent focus areas",
+        status = "primary",
+        solidHeader = TRUE,
+        collapsible = F,
+        width = 12,
+        plotlyOutput("focus_plot"),
+        absolutePanel(
+          top = 60,
+          right = 20,
+          radioButtons(
+            "organization",
+            "Type of organisation",
+            choices =  c(
+              "NGO" = "ngo",
+              "Donor" = "donor",
+              "Social impact investor" = "sia"
+            ),
+            selected = c("NGO" = "ngo")
+          )
+        )
+      )
+    ))
+  )
 
 
 
 
 # Define server logic ####
 server <- function(input, output) {
-
   # Map
   selectedData <- reactive({
-    selectedData <- clean_data 
+    selectedData <- clean_data
   })
   
   info_data <- reactive({
@@ -1079,19 +1148,19 @@ server <- function(input, output) {
   })
   
   observeEvent(input$map_type, {
-    if(input$map_type=="basic"){
-    output$map <- renderLeaflet({
-      leaflet() %>%
-        addTiles() %>%
-        addMarkers(
-          lng = as.numeric(coordDF_1()$Longitude),
-          lat = as.numeric(coordDF_1()$Latitude),
-          popup = info()
-        )
-    })
+    if (input$map_type == "basic") {
+      output$map <- renderLeaflet({
+        leaflet() %>%
+          addTiles() %>%
+          addMarkers(
+            lng = as.numeric(coordDF_1()$Longitude),
+            lat = as.numeric(coordDF_1()$Latitude),
+            popup = info()
+          )
+      })
     }
   })
-
+  
   
   
   
@@ -1103,15 +1172,15 @@ server <- function(input, output) {
   selectedData_2 <- reactive({
     selectedData_2 <- clean_data
   })
-
+  
   info_data_2 <- reactive({
     selectedData_2()[, c(1, 3:5)]
   })
-
+  
   coordDF_2 <- reactive({
     merge(coordDF, info_data_2())
   })
-
+  
   info_2 <- reactive({
     paste(
       sep = "<br/>",
@@ -1125,19 +1194,19 @@ server <- function(input, output) {
       paste("Est.", coordDF_2()$established)
     )
   })
-
-  observeEvent(input$map_type,{
-    if(input$map_type=="crime"){
-  output$map <- renderLeaflet({
-  crime_chloro %>%
-    addMarkers(
-        lng = as.numeric(coordDF_2()$Longitude),
-        lat = as.numeric(coordDF_2()$Latitude),
-        popup = info_2()
-      )
-  })
+  
+  observeEvent(input$map_type, {
+    if (input$map_type == "crime") {
+      output$map <- renderLeaflet({
+        crime_chloro %>%
+          addMarkers(
+            lng = as.numeric(coordDF_2()$Longitude),
+            lat = as.numeric(coordDF_2()$Latitude),
+            popup = info_2()
+          )
+      })
     }
-    if(input$map_type=="hospital"){
+    if (input$map_type == "hospital") {
       output$map <- renderLeaflet({
         RateHospital_chloro %>%
           addMarkers(
@@ -1147,7 +1216,7 @@ server <- function(input, output) {
           )
       })
     }
-    if(input$map_type=="toilet"){
+    if (input$map_type == "toilet") {
       output$map <- renderLeaflet({
         RateToilet_chloro %>%
           addMarkers(
@@ -1157,7 +1226,7 @@ server <- function(input, output) {
           )
       })
     }
-    if(input$map_type=="water"){
+    if (input$map_type == "water") {
       output$map <- renderLeaflet({
         RateWater_chloro %>%
           addMarkers(
@@ -1167,7 +1236,7 @@ server <- function(input, output) {
           )
       })
     }
-    if(input$map_type=="police"){
+    if (input$map_type == "police") {
       output$map <- renderLeaflet({
         RatePolice_chloro %>%
           addMarkers(
@@ -1177,7 +1246,7 @@ server <- function(input, output) {
           )
       })
     }
-    if(input$map_type=="school"){
+    if (input$map_type == "school") {
       output$map <- renderLeaflet({
         RateSchool_chloro %>%
           addMarkers(
@@ -1188,7 +1257,7 @@ server <- function(input, output) {
       })
     }
   })
-
+  
   # Wordcloud ####
   output$wordcloud <- renderPlot({
     docs <- Corpus(VectorSource(clean_data$Service))
@@ -1224,59 +1293,63 @@ server <- function(input, output) {
     )
   })
   
-# Focus area plot ####
+  # Focus area plot ####
   # Filter data
   selectedData_3 <- reactive({
     clean_data %>%
-      filter(ngo_or_donor==input$organization)
+      filter(ngo_or_donor == input$organization)
   })
-
   
-  # Shape data 
+  
+  # Shape data
   focus_data <- reactive({
     focus_data <- selectedData_3() %>%
-      dplyr::select(obs, grep("Field", names(selectedData_3()))) %>%
-      gather(., Column, Focus, 2:ncol(.)) %>%
-      na.omit() %>%
-      dplyr::select(Focus) 
+      dplyr::select(obs, name, grep("Field", names(clean_data))) %>%
+      gather(., Column, Focus, 3:ncol(.)) %>%
+      dplyr::select(-Column,-obs) %>%
+      group_by(Focus) %>%
+      mutate(names = paste("Organisations:\n ", paste(unique(name), collapse = "\n  "))) %>%
+      na.omit(Focus) %>%
+      unique() %>%
+      group_by(Focus) %>%
+      add_tally(name = "Freq") %>%
+      dplyr::select(-name) %>%
+      unique() %>%
+      arrange(Focus) %>%
+      arrange(Focus %in% "Other") %>%
+      arrange(-row_number())
     
-    focus_data <- as.data.frame(table(focus_data$Focus))
-    focus_data <-  mutate(focus_data, pct = focus_data$Freq)
+    focus_data$Focus <-
+      factor(focus_data$Focus, levels = focus_data$Focus)
     focus_data
   })
   
   
-  output$focus_plot <- renderPlot({
+  output$focus_plot <- renderPlotly({
     validate(need(nrow(selectedData_3()) > 0, "No data for this selection"))
     
-    max_prop <- round((max(focus_data()$pct) + 15)) 
     
     
-    plot <- ggplot(focus_data(), aes(x=Var1, y=pct)) +
-      geom_segment(aes(x=Var1, xend=Var1, y=0, yend=pct), color="#6E876C") +
-      geom_point(color="#6E876C") + theme_light() + scale_x_discrete("") +
-      coord_flip() + scale_y_continuous("Number of organisations", limits = c(0,5)) +
+    plot <-
+      ggplot(focus_data(), aes(x = Focus, y = Freq, text = names)) +
+      geom_segment(aes(
+        x = Focus,
+        xend = Focus,
+        y = 0,
+        yend = Freq
+      ),
+      color = "#6E876C",
+      size = 1) +
+      geom_point(color = "#6E876C", size = 2) + theme_light() + scale_x_discrete("") +
+      coord_flip() + scale_y_continuous("Number of organisations", limits = c(0, 5)) +
       theme(
         panel.grid.major.y = element_blank(),
         panel.border = element_blank(),
         axis.ticks.y = element_blank()
       )
-    
-    
-    
-    
-   # plot <-  ggplot(focus_data(), aes(Var1, pct)) + geom_bar(stat = 'identity', fill="#6E876C") +
-   #    scale_y_continuous("Number of organisations", limits = c(0,5)) + 
-   #    scale_x_discrete("") +
-   #    geom_text(
-   #      aes(label = pct),
-   #      vjust = 1.6,
-   #      color = "black",
-   #      size = 3.5
-   #    ) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-   #              panel.background = element_blank(), axis.text.x = element_text(angle = 45),
-   #              axis.text.y = element_blank())
-   plot
+    plot <- ggplotly(plot, tooltip = "text") %>%
+      config(displayModeBar = FALSE)
+    plot
   })
 }
 
@@ -1284,4 +1357,3 @@ server <- function(input, output) {
 
 # Run the application
 shinyApp(ui = ui, server = server)
-
