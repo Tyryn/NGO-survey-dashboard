@@ -24,6 +24,29 @@ library(sf)
 library(dplyr)
 library(raster)
 
+# Loading logo function ####
+loadingLogo <- function(href, src, loadingsrc, height = 40, width = 40, alt = NULL) {
+  tagList(
+    tags$head(
+      tags$script(
+        "setInterval(function(){
+                     if ($('html').attr('class')=='shiny-busy') {
+                     $('div.busy').show();
+                     $('div.notbusy').hide();
+                     } else {
+                     $('div.busy').hide();
+                     $('div.notbusy').show();
+           }
+         },100)")
+    ),
+    tags$a(href=href,
+           div(class = "busy",  
+               img(src=loadingsrc,height = height, width = width, alt = alt)),
+           div(class = 'notbusy',
+               img(src = src, height = height, width = width, alt = alt))
+    )
+  )
+}
 
 
 # 1. Move none to the end of the maps
@@ -918,7 +941,13 @@ fields <- fields[!is.na(fields)]
 
 ui <- dashboardPage(skin = "blue",
   dashboardHeader(
-    title = "South African Development Landscape",titleWidth = 450), 
+    title = "South African Development Landscape",titleWidth = 450,
+    tags$li(a(href = 'https://firdaleconsulting.com',img(src = 'firdale_logo.png', 
+                                                         height="47px"),
+              style = "padding-top: 1px !important;
+              padding-bottom: 1px !important;padding-left:1px !important;
+              padding-right:10px !important;"),
+            class = "dropdown")),
   dashboardSidebar(disable = TRUE),
   dashboardBody(fluidRow(
     tags$style(HTML(".box.box-solid.box-primary>.box-header {
