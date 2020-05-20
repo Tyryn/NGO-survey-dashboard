@@ -220,8 +220,8 @@ ui <-
       column(
         4,
         offset = 3,
-        actionButton("submit", "Submit", class = "btn-primary")
-      ),
+        actionButton("submit", "Submit", class = "btn-primary", onclick = "window.open('https://firdaleconsulting.shinyapps.io/NGO_dashboard/', '_blank')"
+      )),
       column(4, img(
         src = 'firdale_logo.png',
         height = '100px',
