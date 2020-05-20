@@ -647,6 +647,9 @@ bounds$MUNICNAME <- gsub("municipality", "", bounds$MUNICNAME)
 bounds$MUNICNAME <- trimws(bounds$MUNICNAME)
 colnames(bounds)[6] <- "Municipality"
 
+bounds <- bounds %>%
+  mutate(Municipality = trimws(gsub("\\s+", " ", Municipality)))
+
 # Merge datasets
 community_map <-
   left_join(bounds, community_cleaned, by = "Municipality")
@@ -706,14 +709,10 @@ crime_chloro <- leaflet() %>%
 pal <-
   colorBin("Greens",
            domain = community_map$RateHospital,
-           bins = c(1.6, 2, 2.5, 3, 3.5, 4))
+           bins = c(1.5, 2, 2.5, 3, 3.5, 4))
 
 # Add labels
-community_map$Municipality <-
-  gsub("(?<=\\b)([a-z])",
-       "\\U\\1",
-       tolower(community_map$Municipality),
-       perl = TRUE)
+community_map$Municipality <- str_to_title(community_map$Municipality)
 labels <- sprintf(
   "<strong>%s</strong><br/>%g average hospital rating (out of 4)",
   community_map$Municipality,
@@ -760,11 +759,7 @@ pal <-
            bins = c(2, 2.5, 3, 3.5, 4))
 
 # Add labels
-community_map$Municipality <-
-  gsub("(?<=\\b)([a-z])",
-       "\\U\\1",
-       tolower(community_map$Municipality),
-       perl = TRUE)
+community_map$Municipality <- str_to_title(community_map$Municipality)
 labels <- sprintf(
   "<strong>%s</strong><br/>%g average sanitation/toilet rating (out of 4)",
   community_map$Municipality,
@@ -810,11 +805,7 @@ pal <-
            bins = c(2, 2.5, 3, 3.5, 4))
 
 # Add labels
-community_map$Municipality <-
-  gsub("(?<=\\b)([a-z])",
-       "\\U\\1",
-       tolower(community_map$Municipality),
-       perl = TRUE)
+community_map$Municipality <- str_to_title(community_map$Municipality)
 labels <- sprintf(
   "<strong>%s</strong><br/>%g average water rating (out of 4)",
   community_map$Municipality,
@@ -862,11 +853,7 @@ pal <-
            bins = c(2, 2.5, 3, 3.5, 4))
 
 # Add labels
-community_map$Municipality <-
-  gsub("(?<=\\b)([a-z])",
-       "\\U\\1",
-       tolower(community_map$Municipality),
-       perl = TRUE)
+community_map$Municipality <- str_to_title(community_map$Municipality)
 labels <- sprintf(
   "<strong>%s</strong><br/>%g average police rating (out of 4)",
   community_map$Municipality,
@@ -915,11 +902,7 @@ pal <-
            bins = c(2.5, 3, 3.5, 4))
 
 # Add labels
-community_map$Municipality <-
-  gsub("(?<=\\b)([a-z])",
-       "\\U\\1",
-       tolower(community_map$Municipality),
-       perl = TRUE)
+community_map$Municipality <- str_to_title(community_map$Municipality)
 labels <- sprintf(
   "<strong>%s</strong><br/>%g average rating of nearest school (out of 4)",
   community_map$Municipality,
@@ -958,7 +941,7 @@ RateSchool_chloro <- leaflet() %>%
     position = "topright"
   )
 
-#RateSchool_chloro
+
 
 ### ###### ###### ###### ###### ###### ###### ###### ###### ###### ###
 # Dashboard ####
@@ -977,11 +960,14 @@ ui <- dashboardPage(
   skin = "blue",
   dashboardHeader(
     title = "South African Development Landscape",
-    titleWidth = 450,
+    titleWidth = 450, 
     tags$li(
       a(
-        href = 'https://firdaleconsulting.com',
-        img(src = 'firdale_logo.png',
+        href = 'https://firdaleconsulting.com', tags$em("Firdale Consulting", style = "font-size:20px; font-style: normal;
+                                                        font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;
+                                                        vertical-align:middle;
+                                                        "),
+        img(src = 'firdale_logo_2.svg',
             height = "47px"),
         style = "padding-top: 1px !important;
         padding-bottom: 1px !important;padding-left:1px !important;
@@ -1259,39 +1245,39 @@ server <- function(input, output) {
   })
   
   # Wordcloud ####
-  output$wordcloud <- renderPlot({
-    docs <- Corpus(VectorSource(clean_data$Service))
-    
-    # Cleaning the text
-    docs <-
-      tm_map(docs, content_transformer(tolower))    # To lower case
-    # docs <- tm_map(docs, removeNumber)  # Remove numbers
-    docs <-
-      tm_map(docs, removeWords, stopwords("english")) # Remove common English words
-    docs <-
-      tm_map(docs, removeWords, c("help", "assist"))  # Remove words common and useless words to this context
-    docs <- tm_map(docs, removePunctuation)
-    docs <- tm_map(docs, stripWhitespace)
-    
-    # Build term-document matrix
-    
-    dtm <- TermDocumentMatrix(docs)
-    m <- as.matrix(dtm)
-    v <- sort(rowSums(m), decreasing = TRUE)
-    d <- data.frame(word = names(v), freq = v)
-    head(d, 10)
-    
-    # Build word cloud
-    wordcloud(
-      words = d$word,
-      freq = d$freq,
-      min.freq = 1,
-      max.words = 200,
-      random.order = FALSE,
-      rot.per = 0.35,
-      colors = brewer.pal(8, "RdBu")
-    )
-  })
+  # output$wordcloud <- renderPlot({
+  #   docs <- Corpus(VectorSource(clean_data$Service))
+  #   
+  #   # Cleaning the text
+  #   docs <-
+  #     tm_map(docs, content_transformer(tolower))    # To lower case
+  #   # docs <- tm_map(docs, removeNumber)  # Remove numbers
+  #   docs <-
+  #     tm_map(docs, removeWords, stopwords("english")) # Remove common English words
+  #   docs <-
+  #     tm_map(docs, removeWords, c("help", "assist"))  # Remove words common and useless words to this context
+  #   docs <- tm_map(docs, removePunctuation)
+  #   docs <- tm_map(docs, stripWhitespace)
+  #   
+  #   # Build term-document matrix
+  #   
+  #   dtm <- TermDocumentMatrix(docs)
+  #   m <- as.matrix(dtm)
+  #   v <- sort(rowSums(m), decreasing = TRUE)
+  #   d <- data.frame(word = names(v), freq = v)
+  #   head(d, 10)
+  #   
+  #   # Build word cloud
+  #   wordcloud(
+  #     words = d$word,
+  #     freq = d$freq,
+  #     min.freq = 1,
+  #     max.words = 200,
+  #     random.order = FALSE,
+  #     rot.per = 0.35,
+  #     colors = brewer.pal(8, "RdBu")
+  #   )
+  # })
   
   # Focus area plot ####
   # Filter data
