@@ -87,10 +87,20 @@ labelMandatory <- function(label) {
 }
 appCSS <- ".mandatory_star { color: red; }"
 
-# UI
+# UI ####
 ui <-
   #fluidPage(setBackgroundColor("#ADD8E6"),
   fluidPage(setBackgroundColor("#6E876C"),
+            tags$style(HTML("
+             .box.box-solid.box-primary>.box-header {
+
+                            }
+                            
+                            .box.box-solid.box-primary{
+                            
+                            background:#f542b3
+                            }
+                            ")),
     shinyjs::useShinyjs(),
     shinyjs::inlineCSS(appCSS),
     fluidRow(column(12, offset = 5, 
@@ -101,7 +111,40 @@ ui <-
                       column(
                         8,
                         offset = 2,
+                        wellPanel(fluidRow(column(8, offset = 1, h2("Non-profit landscape survey")),
+                                           column(3, img(
+                                             src = 'firdale_logo_3.svg',
+                                             height = "70px" 
+                                           ))),
+                    p("We want to know more about the NGOs, Donors, and
+                      Social Impact Investors in South Africa. We also want these
+                      organisations to connect with and know more about each other."),
+                    p("The button at the bottom
+                      will save your responses and open a dashboard that
+                      provides a landscape of all the organisations
+                      that answered this survey. This dashboard only uses
+                      information regarding your organisation's region of operation
+                      and its field of work. We will not share information about your organisation's
+                      priorities and M&E."),
+                    p("For any questions, contact us at megan@firdaleconsulting.com.")))))),
+    fluidRow(column(12,
+                    fluidRow(
+                      column(
+                        8,
+                        offset = 2,
                         wellPanel(
+                          # fluidRow(column(12, box(
+                          # p("We want to know more about the NGOs, Donors, and 
+                          #   Social Impact Investors in South Africa. We also want these
+                          #  organisations to know more about each other."),
+                          #   p("The button at the bottom 
+                          #   will save your responses and open a dashboard that
+                          #   provides a landscape of all the organisations
+                          #   that answered this survey. This dashboard only uses 
+                          #   information regarding your organisation's region of operation 
+                          #   and its field of work. We will not share information about your organisation's
+                          #   priorities and current M&E."), 
+                          # p("If you have any questions, contact us at megan@firdaleconsulting.com.")))),
                           fluidRow(selectInput(
                             "ngo_or_donor",
                             "1. NGO, donor, or social impact investor?",
@@ -177,7 +220,7 @@ ui <-
                               condition = "input.ngo_or_donor == 'ngo'",
                               textInput(
                                 "service",
-                                "7. Please provide a description of what your organization does"
+                                "7. Please provide a description of what your organisation does"
                               )
                             )),
                           fluidRow(
@@ -185,7 +228,7 @@ ui <-
                               condition = "input.ngo_or_donor == 'ngo'",
                               selectInput(
                                 "priorities",
-                                "8. Next year, your organization is prioritising:",
+                                "8. Next year, your organisation is prioritising:",
                                 choices = c("Select any that apply" = "", priorities),
                                 multiple = TRUE
                               )
@@ -219,18 +262,13 @@ ui <-
       extendShinyjs(text = jscode),
       column(
         4,
-        offset = 3,
-        actionButton("submit", "Submit", class = "btn-primary", onclick = "window.open('https://firdaleconsulting.shinyapps.io/NGO_dashboard/', '_blank')"
-      )),
-      column(4, img(
-        src = 'firdale_logo.png',
-        height = '100px',
-        width = '100px'
+        offset = 5,
+        actionButton("submit", "Submit and head to the dashboard", class = "btn-primary", onclick = "window.open('https://firdaleconsulting.shinyapps.io/NGO_dashboard/', '_blank')"
       ))
     )
   )
 
-# Server
+# Server ####
 server <- function(input, output, session) {
   results <- reactive(
     c(
@@ -255,7 +293,8 @@ server <- function(input, output, session) {
       gs_add_row(ws = "Survey", input = results())
   })
   observeEvent(input$submit, {
-    showNotification("Response successfully submitted. Thanks for filling out our form!", type = "message")
+    showNotification("Response successfully submitted. Thanks for filling out our form! You will now be taken to the dashboard.", 
+                     type = "message")
   })
   observeEvent(input$submit, {
     delay(5000, js$refresh())   ## Delay so that the message stays for 5 secs, then refreshes.
