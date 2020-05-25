@@ -97,6 +97,10 @@ myfunc <- function(v1) {
 }
 
 
+# Colour coded icons for leaflet map ####
+orgtypeIcons <- iconList(red = makeIcon("../www/markers-red.svg", iconWidth = 24, iconHeight =32),
+                       green = makeIcon("../www/markers-blue.svg", iconWidth = 24, iconHeight = 32))
+
 # Clean data ####
 
 # Break up questions with multiple possible answers into chunk and then merge again
@@ -637,7 +641,7 @@ coordDF <-
 # Community data chloropleth ####
 ### ###### ###### ###### ###### ###### ###### ###### ###### ###### ###
 community_cleaned <-
-  read.csv("community_cleaned.csv", header = TRUE)
+  read.csv("community_cleaned_2.csv", header = TRUE)
 
 # Shape file
 bounds <-
@@ -648,11 +652,23 @@ bounds$MUNICNAME <- trimws(bounds$MUNICNAME)
 colnames(bounds)[6] <- "Municipality"
 
 bounds <- bounds %>%
-  mutate(Municipality = trimws(gsub("\\s+", " ", Municipality)))
+  mutate(Municipality = trimws(gsub("\\s+", " ", Municipality))) # %>%
+  # mutate(Municipality = ifelse(Municipality=='khâi-ma', 'khai-ma', as.character(Municipality))) # Trying to get this graph to work
+
 
 # Merge datasets
 community_map <-
   left_join(bounds, community_cleaned, by = "Municipality")
+
+# Icons
+
+clean_data <- clean_data %>%
+  mutate(group = ifelse(ngo_or_donor=="ngo", "lightblue", "lightred"))
+
+icons <- awesomeIcons(icon = "whatever",
+                      iconColor = "black",
+                      library = "glyphicon",
+                      markerColor = clean_data$group)
 
 # _Crime ####
 # Create bins
@@ -967,7 +983,7 @@ ui <- dashboardPage(
                                                         font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;
                                                         vertical-align:middle;
                                                         "),
-        img(src = 'firdale_logo_2.svg',
+        img(src = 'firdale_logo.svg',
             height = "47px"),
         style = "padding-top: 1px !important;
         padding-bottom: 1px !important;padding-left:1px !important;
@@ -1032,7 +1048,7 @@ ui <- dashboardPage(
       )
       ),
     box(
-      title = "Survey respondent locations",
+      title = "Respondent locations",
       status = "primary",
       solidHeader = TRUE,
       width = 12,
@@ -1047,7 +1063,7 @@ ui <- dashboardPage(
           collapsible = FALSE,
           radioButtons(
             "map_type",
-            "See service delivery satifaction, by municipality",
+            "See service delivery satisfaction, by municipality",
             choices =  c(
               "Access to running water" = "water",
               "Access to sanitation/toilets" =
@@ -1065,7 +1081,7 @@ ui <- dashboardPage(
             2 Poor;  3 Average;  4 Good")
           )
         ),
-      p("Source: Community Survey 2016 (StatsSA)")
+      p("Sources: Community Survey 2016 (StatsSA) and Firdale Consulting")
       )
       ),
     fluidRow(
@@ -1195,7 +1211,7 @@ server <- function(input, output) {
     if (input$map_type == "hospital") {
       output$map <- renderLeaflet({
         RateHospital_chloro %>%
-          addMarkers(
+          addAwesomeMarkers(icon = icons,
             lng = as.numeric(coordDF_2()$Longitude),
             lat = as.numeric(coordDF_2()$Latitude),
             popup = info_2()
@@ -1205,7 +1221,7 @@ server <- function(input, output) {
     if (input$map_type == "toilet") {
       output$map <- renderLeaflet({
         RateToilet_chloro %>%
-          addMarkers(
+          addAwesomeMarkers(icon = icons,
             lng = as.numeric(coordDF_2()$Longitude),
             lat = as.numeric(coordDF_2()$Latitude),
             popup = info_2()
@@ -1215,7 +1231,7 @@ server <- function(input, output) {
     if (input$map_type == "water") {
       output$map <- renderLeaflet({
         RateWater_chloro %>%
-          addMarkers(
+          addAwesomeMarkers(icon = icons,
             lng = as.numeric(coordDF_2()$Longitude),
             lat = as.numeric(coordDF_2()$Latitude),
             popup = info_2()
@@ -1225,7 +1241,7 @@ server <- function(input, output) {
     if (input$map_type == "police") {
       output$map <- renderLeaflet({
         RatePolice_chloro %>%
-          addMarkers(
+          addAwesomeMarkers(icon = icons,
             lng = as.numeric(coordDF_2()$Longitude),
             lat = as.numeric(coordDF_2()$Latitude),
             popup = info_2()
