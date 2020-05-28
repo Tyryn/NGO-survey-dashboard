@@ -670,6 +670,14 @@ icons <- awesomeIcons(icon = "whatever",
                       library = "glyphicon",
                       markerColor = clean_data$group)
 
+# Icon legend
+icon_legend <- "<img src = 'markers-lightblue.svg' 
+style='width:30px;height:30px;'>NGOs<br/>
+
+<img src = 'markers-lightred.svg'
+style='width:30px;height:30px;'>Donors/social impact investors"
+
+
 # _Crime ####
 # Create bins
 pal <- colorBin("YlOrRd", domain = community_map$Crime)
@@ -813,7 +821,7 @@ RateToilet_chloro <- leaflet() %>%
     opacity = 0.7,
     position = "topright"
   )
-
+ 
 # _Water ####
 pal <-
   colorBin("Greens",
@@ -964,13 +972,19 @@ RateSchool_chloro <- leaflet() %>%
 ### ###### ###### ###### ###### ###### ###### ###### ###### ###### ###
 
 # Create vector containing all Fields in the dataset
-fields_unique <- as.vector(as.matrix(field_data[,-c(1)]))
-fields <- unique(fields_unique)
-fields <- fields[!is.na(fields)]
-
+fields <- field_data %>% 
+  pivot_longer(cols = starts_with("Field")) %>%
+  dplyr::select(value) %>%
+  unique() %>%
+  na.omit() %>%
+  mutate(value = as.character(value)) %>%
+  arrange(value) %>%
+  arrange(value %in% "Other") 
+  
+fields <- as.vector(t(fields)) #  Convert to vector
 
 # Define UI for application ####
-#636466
+
 
 ui <- dashboardPage(
   skin = "blue",
@@ -1052,36 +1066,54 @@ ui <- dashboardPage(
       status = "primary",
       solidHeader = TRUE,
       width = 12,
-      height = 480,
+      # height = 480,
       collapsible = F,
-      leafletOutput(outputId = "map"),
-      absolutePanel(
-        bottom = 20,
-        left = 10,
-        box(
-          width = 12,
-          collapsible = FALSE,
-          radioButtons(
-            "map_type",
-            "See service delivery satisfaction, by municipality",
-            choices =  c(
-              "Access to running water" = "water",
-              "Access to sanitation/toilets" =
-                "toilet",
-              "Quality of nearest hospital" = "hospital",
-              "Quality of nearest school" = "school",
-              "Quality of local police" =
-                "police",
-              "None" = "basic"
-            ),
-            selected = "basic"
-          ),
-          p("Survey respondents rated delivery of each service:"),
-          p("1 No delivery;
-            2 Poor;  3 Average;  4 Good")
-          )
-        ),
-      p("Sources: Community Survey 2016 (StatsSA) and Firdale Consulting")
+      fluidRow(
+        box(width=4, p("Lorem ipsum dolor sit amet, consectetur adipiscing elit. Praesent porttitor congue urna, ut congue enim lobortis eu. Vivamus tristique est ut risus aliquet, vel semper eros tristique. Curabitur et laoreet dolor. Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Maecenas sagittis turpis nunc. Donec mattis felis a sem consectetur ornare. Phasellus pulvinar, sem quis vestibulum ultrices, leo dolor pretium diam, sed luctus tortor arcu ut lectus. Suspendisse cursus ex ac orci fringilla, in euismod nulla sagittis.
+                         ")),
+      box(collapsible = FALSE, solidHeader = FALSE, width = 4,
+            radioButtons(
+              "map_type",
+              "See service delivery satisfaction, by municipality",
+              choices =  c(
+                "None" = "basic",
+                "Access to running water" = "water",
+                "Access to sanitation/toilets" =
+                  "toilet",
+                "Quality of nearest hospital" = "hospital",
+                "Quality of nearest school" = "school",
+                "Quality of local police" =
+                  "police"
+              ),
+              selected = "basic"
+            )),
+      box(width = 4,
+      selectInput("fields", "Filter by organisation fields of interest:",
+                  fields, multiple = TRUE, selected = fields))),
+      fluidRow(
+      box(leafletOutput(outputId = "map"), width = 12)
+      )
+      # absolutePanel(
+      #   bottom = 20,
+      #   left = 10,
+      #   box(
+      #     width = 12,
+      #     collapsible = FALSE,
+      #     radioButtons(
+      #       "map_type",
+      #       "See service delivery satisfaction, by municipality",
+      #       choices =  c(
+      #         "Access to running water" = "water",
+      #         "Access to sanitation/toilets" =
+      #           "toilet",
+      #         "Quality of nearest hospital" = "hospital",
+      #         "Quality of nearest school" = "school",
+      #         "Quality of local police" =
+      #           "police",
+      #         "None" = "basic"
+      #       ),
+      #       selected = "basic"
+      #     ),
       )
       ),
     fluidRow(
@@ -1092,28 +1124,28 @@ ui <- dashboardPage(
       #   collapsible = TRUE,
       #   plotOutput("wordcloud", width = "100%")
       # ),
-      box(
-        title = "Survey respondent focus areas",
-        status = "primary",
-        solidHeader = TRUE,
-        collapsible = F,
-        width = 12,
-        plotlyOutput("focus_plot"),
-        absolutePanel(
-          top = 60,
-          right = 20,
-          radioButtons(
-            "organization",
-            "Type of organisation",
-            choices =  c(
-              "NGO" = "ngo",
-              "Donor" = "donor",
-              "Social impact investor" = "sia"
-            ),
-            selected = c("NGO" = "ngo")
-          )
-        )
-      )
+      # box(
+      #   title = "Survey respondent focus areas",
+      #   status = "primary",
+      #   solidHeader = TRUE,
+      #   collapsible = F,
+      #   width = 12,
+      #   plotlyOutput("focus_plot"),
+      #   absolutePanel(
+      #     top = 60,
+      #     right = 20,
+      #     radioButtons(
+      #       "organization",
+      #       "Type of organisation",
+      #       choices =  c(
+      #         "NGO" = "ngo",
+      #         "Donor" = "donor",
+      #         "Social impact investor" = "sia"
+      #       ),
+      #       selected = c("NGO" = "ngo")
+      #     )
+      #   )
+      # )
     ))
   )
 
@@ -1124,7 +1156,9 @@ ui <- dashboardPage(
 server <- function(input, output) {
   # Map
   selectedData <- reactive({
-    selectedData <- clean_data
+    selectedData <- clean_data %>%
+    dplyr::filter_at(vars(starts_with("Field")), any_vars(. %in% input$fields))
+    
   })
   
   info_data <- reactive({
@@ -1154,11 +1188,12 @@ server <- function(input, output) {
       output$map <- renderLeaflet({
         leaflet() %>%
           addTiles() %>%
-          addMarkers(
+          addAwesomeMarkers(icon = icons,
             lng = as.numeric(coordDF_1()$Longitude),
             lat = as.numeric(coordDF_1()$Latitude),
             popup = info()
-          )
+          ) %>%
+          addControl(html = icon_legend, position = "bottomright")
       })
     }
   })
@@ -1171,9 +1206,11 @@ server <- function(input, output) {
   
   
   # # # Chloropleth ####
-  selectedData_2 <- reactive({
-    selectedData_2 <- clean_data
-  })
+    selectedData_2 <- reactive({
+      selectedData_2 <- clean_data  %>%
+        dplyr::filter_at(vars(starts_with("Field")), any_vars(. %in% input$fields))
+        # filter_at(vars(starts_with("Field")), any_vars(.==input$fields))
+    })
   
   info_data_2 <- reactive({
     selectedData_2()[, c(1, 3:5)]
@@ -1205,7 +1242,8 @@ server <- function(input, output) {
             lng = as.numeric(coordDF_2()$Longitude),
             lat = as.numeric(coordDF_2()$Latitude),
             popup = info_2()
-          )
+          )  %>%
+          addControl(html = icon_legend, position = "bottomright")
       })
     }
     if (input$map_type == "hospital") {
@@ -1215,7 +1253,8 @@ server <- function(input, output) {
             lng = as.numeric(coordDF_2()$Longitude),
             lat = as.numeric(coordDF_2()$Latitude),
             popup = info_2()
-          )
+          ) %>%
+        addControl(html = icon_legend, position = "bottomright")
       })
     }
     if (input$map_type == "toilet") {
@@ -1225,7 +1264,8 @@ server <- function(input, output) {
             lng = as.numeric(coordDF_2()$Longitude),
             lat = as.numeric(coordDF_2()$Latitude),
             popup = info_2()
-          )
+          ) %>%
+          addControl(html = icon_legend, position = "bottomright")
       })
     }
     if (input$map_type == "water") {
@@ -1235,7 +1275,8 @@ server <- function(input, output) {
             lng = as.numeric(coordDF_2()$Longitude),
             lat = as.numeric(coordDF_2()$Latitude),
             popup = info_2()
-          )
+          ) %>%
+          addControl(html = icon_legend, position = "bottomright")
       })
     }
     if (input$map_type == "police") {
@@ -1245,17 +1286,19 @@ server <- function(input, output) {
             lng = as.numeric(coordDF_2()$Longitude),
             lat = as.numeric(coordDF_2()$Latitude),
             popup = info_2()
-          )
+          ) %>%
+          addControl(html = icon_legend, position = "bottomright")
       })
     }
     if (input$map_type == "school") {
       output$map <- renderLeaflet({
         RateSchool_chloro %>%
-          addMarkers(
+          addAwesomeMarkers(icon = icons,
             lng = as.numeric(coordDF_2()$Longitude),
             lat = as.numeric(coordDF_2()$Latitude),
             popup = info_2()
-          )
+          ) %>%
+          addControl(html = icon_legend, position = "bottomright")
       })
     }
   })
