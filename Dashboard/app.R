@@ -1088,8 +1088,9 @@ ui <- dashboardPage(
               selected = "basic"
             )),
       box(width = 4,
-      selectInput("fields", "Filter by organisation fields of interest:",
-                  fields, multiple = TRUE, selected = fields))),
+      selectizeInput("fields", "Filter by organisation fields of interest:",
+                  fields, multiple = TRUE, selected = fields,
+                  options = list(plugins= list('remove_button'))))),
       fluidRow(
       box(leafletOutput(outputId = "map"), width = 12)
       )
