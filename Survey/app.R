@@ -100,9 +100,11 @@ ui <-
                             
                             background:#f542b3
                             }
+              #submit{margin-bottom:20px}
                             ")),
     shinyjs::useShinyjs(),
     shinyjs::inlineCSS(appCSS),
+    modalDialog(footer = modalButton(label = "Continue to survey"),
     fluidRow(column(12, offset = 5, 
                     h1(id="big-heading", ""),
                     tags$style(HTML("#big-heading{color: white;}")))),
@@ -111,11 +113,13 @@ ui <-
                       column(
                         8,
                         offset = 2,
-                        wellPanel(fluidRow(column(8, offset = 1, h2("Non-profit landscape survey")),
+                        fluidRow(column(8, offset = 1, h3("Firdale Consulting")),
                                            column(3, img(
                                              src = 'firdale_logo_3.svg',
-                                             height = "70px" 
-                                           ))),
+                                             height = "50px" 
+                                           ))))),
+                        fluidRow(hr()),
+                      fluidRow(column(10, offset = 1,
                     p("We want to know more about the NGOs, Donors, and
                       Social Impact Investors in South Africa. We also want these
                       organisations to connect with and know more about each other."),
@@ -133,44 +137,32 @@ ui <-
                         8,
                         offset = 2,
                         wellPanel(
-                          # fluidRow(column(12, box(
-                          # p("We want to know more about the NGOs, Donors, and 
-                          #   Social Impact Investors in South Africa. We also want these
-                          #  organisations to know more about each other."),
-                          #   p("The button at the bottom 
-                          #   will save your responses and open a dashboard that
-                          #   provides a landscape of all the organisations
-                          #   that answered this survey. This dashboard only uses 
-                          #   information regarding your organisation's region of operation 
-                          #   and its field of work. We will not share information about your organisation's
-                          #   priorities and current M&E."), 
-                          # p("If you have any questions, contact us at megan@firdaleconsulting.com.")))),
                           fluidRow(selectInput(
                             "ngo_or_donor",
-                            "1. NGO, donor, or social impact investor?",
+                            "NGO, donor, or social impact investor?",
                             choices = c("NGO" = "ngo", "Donor" = "donor", "Social impact investor"=
                                           "sia", "Other"="other")
                           )),
                           fluidRow(textInput(
-                            "name", labelMandatory("2. Name of organisation"), ""
+                            "name", labelMandatory("Name of organisation"), ""
                           )),
                           fluidRow(
                             selectInput(
                               "established",
-                              "3. Year established",
+                              "Year established",
                               choices = 1900:as.numeric(format(Sys.Date(), "%Y")),
                               selected = 2010
                             )
                           ),
                           fluidRow(textInput(
-                            "website", "4. Organisation's website"
+                            "website", "Organisation's website"
                           )),
                           fluidRow(
                             conditionalPanel(
                               condition = "input.ngo_or_donor == 'ngo'",
                               selectInput(
                                 "field",
-                                "5. Field of work",
+                                "Field of work",
                                 choices = c("Select up to 5 from the list" = "", fields),
                                 multiple = TRUE
                               )
@@ -181,7 +173,7 @@ ui <-
                               condition = "input.ngo_or_donor == 'donor' || input.ngo_or_donor == 'sia'",
                               selectInput(
                                 "field_2",
-                                "5. Main fields of focus",
+                                "Main fields of focus",
                                 choices = c("Select from the list" = "", fields),
                                 multiple = TRUE
                               )
@@ -192,14 +184,14 @@ ui <-
                               condition = "input.ngo_or_donor == 'other'",
                               textInput(
                                 "other_description",
-                                "5. Please describe your organisation"
+                                "Please describe your organisation"
                               )
                             )
                           ),
                           fluidRow(
                               checkboxGroupInput(
                                 "country",
-                                "6. Regions of operation",
+                                "Regions of operation",
                                 choices = c("South Africa",
                                             "Southern Africa",
                                             "Rest of world"),
@@ -210,7 +202,7 @@ ui <-
                             condition = "input.country.indexOf('South Africa')>-1",
                             selectInput(
                               "municipality",
-                              "6a. South African villages, towns, or cities where your organisation mainly operates",
+                              "South African villages, towns, or cities where your organisation mainly operates",
                               c("Select up to 10" = "", SouthAfricanCities$AccentCity),
                               multiple = TRUE
                             )
@@ -220,7 +212,7 @@ ui <-
                               condition = "input.ngo_or_donor == 'ngo'",
                               textInput(
                                 "service",
-                                "7. Please provide a description of what your organisation does"
+                                "Please provide a description of what your organisation does"
                               )
                             )),
                           fluidRow(
@@ -228,7 +220,7 @@ ui <-
                               condition = "input.ngo_or_donor == 'ngo'",
                               selectInput(
                                 "priorities",
-                                "8. Next year, your organisation is prioritising:",
+                                "Next year, your organisation is prioritising:",
                                 choices = c("Select any that apply" = "", priorities),
                                 multiple = TRUE
                               )
@@ -238,7 +230,7 @@ ui <-
                               condition = "input.ngo_or_donor == 'ngo'",
                               radioButtons(
                                 "evaluated",
-                                "9. Your organisation has an effective M&E system in place",
+                                "Your organisation has an effective M&E system in place",
                                 choices = c("Agree", "Neutral", "Disagree")
                               )
                             )
@@ -248,7 +240,7 @@ ui <-
                               condition = "input.ngo_or_donor == 'ngo'",
                               selectInput(
                                 "pain",
-                                "10. What are your organisation's main M&E pain points?",
+                                "What are your organisation's main M&E pain points?",
                                 choices = c("Collecting data", "Establishing a framework", "Finding experts", "Other"),
                                 multiple = TRUE
                               )
@@ -263,7 +255,7 @@ ui <-
       column(
         4,
         offset = 5,
-        actionButton("submit", "Submit and head to the dashboard", class = "btn-primary", onclick = "window.open('https://firdaleconsulting.shinyapps.io/NGO_dashboard/', '_blank')"
+        actionButton("submit", "Submit and continue to the dashboard", class = "btn-primary", onclick = "window.open('https://firdaleconsulting.shinyapps.io/NGO_dashboard/', '_blank')"
       ))
     )
   )
