@@ -1069,7 +1069,11 @@ ui <- dashboardPage(
       # height = 480,
       collapsible = F,
       fluidRow(
-        box(width=4, p("Lorem ipsum dolor sit amet, consectetur adipiscing elit. Praesent porttitor congue urna, ut congue enim lobortis eu. Vivamus tristique est ut risus aliquet, vel semper eros tristique. Curabitur et laoreet dolor. Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Maecenas sagittis turpis nunc. Donec mattis felis a sem consectetur ornare. Phasellus pulvinar, sem quis vestibulum ultrices, leo dolor pretium diam, sed luctus tortor arcu ut lectus. Suspendisse cursus ex ac orci fringilla, in euismod nulla sagittis.
+        box(width=4, p("The map shows the location of all the organisations that completed the survey. The aim is to connect development organisations with each other and areas that they can help."), 
+                      p("Looking at the first menu, selecting any of the options (other than “None”) loads a chloropleth map. These chloropleths show each municipality’s average satisfaction for the selected service, with the averages calculated from StatsSA’s Community Survey (2016). In this survey, each of the roughly 900 000 respondents were asked to rate each service: 1 – No service delivery; 2 – Poor; 3 – Average; 4 – Good."), 
+                       p("The second menu filters the organisations that appear on the map by their fields of interest. 
+                       For any questions or feedback, please contact us at: megan@firdaleconsulting.com
+                       
                          ")),
       box(collapsible = FALSE, solidHeader = FALSE, width = 4,
             radioButtons(
