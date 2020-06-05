@@ -22,21 +22,34 @@
 
 library(shiny)
 library(shinydashboard)
-library("googlesheets")
-library("DT")
+library(googlesheets)
+library(DT)
 library(readxl)
 library(shinyjs)
 library(shinyWidgets)
 library(V8)
+library(googlesheets4)
 
 # Get shiny token to access google drive
-# shiny_token <- gs_auth()
-# saveRDS(shiny_token, "shiny_app_token.rds")
+
+
+# Authorise the app ####
+
+sheets_deauth()
+# set values in options
+options(
+  gargle_oauth_cache = ".secrets",
+  gargle_oauth_email = "tyryn.carnegie@gmail.com"
+)
+# run sheets auth
+
+sheets_auth(path = "client_secret_691536632541-7r4t1u45ntoqhrkddtcmfrr2udblpsen.apps.googleusercontent.com.json")
+
 
 
 ## Google Sheet has been created. This is the sheet that it will alter with each submission
-sheetkey <- "1bnWcFKSQZo5aMOd_9BdjQIt_W4iMjWvzMODOoepLq6k"
-Data <- gs_key(sheetkey)
+# sheetkey <- "1bnWcFKSQZo5aMOd_9BdjQIt_W4iMjWvzMODOoepLq6k"
+Data <- sheets_read("1bnWcFKSQZo5aMOd_9BdjQIt_W4iMjWvzMODOoepLq6k")
 
 
 ## Get separate geo dataframes, separated by province
@@ -91,6 +104,7 @@ appCSS <- ".mandatory_star { color: red; }"
 ui <-
   #fluidPage(setBackgroundColor("#ADD8E6"),
   fluidPage(setBackgroundColor("#6E876C"),
+            headerPanel(""),
             tags$style(HTML("
              .box.box-solid.box-primary>.box-header {
 
@@ -104,39 +118,15 @@ ui <-
                             ")),
     shinyjs::useShinyjs(),
     shinyjs::inlineCSS(appCSS),
-    modalDialog(footer = modalButton(label = "Continue to survey"),
-    fluidRow(column(12, offset = 5, 
-                    h1(id="big-heading", ""),
-                    tags$style(HTML("#big-heading{color: white;}")))),
-    fluidRow(column(12,
-                    fluidRow(
-                      column(
-                        8,
-                        offset = 2,
-                        fluidRow(column(8, offset = 1, h3("Firdale Consulting")),
-                                           column(3, img(
-                                             src = 'firdale_logo_3.svg',
-                                             height = "50px" 
-                                           ))))),
-                        fluidRow(hr()),
-                      fluidRow(column(10, offset = 1,
-                    p("We want to know more about the NGOs, Donors, and
-                      Social Impact Investors in South Africa. We also want these
-                      organisations to connect with and know more about each other."),
-                    p("The button at the bottom
-                      will save your responses and open a dashboard that
-                      provides a landscape of all the organisations
-                      that answered this survey. This dashboard only uses
-                      information regarding your organisation's region of operation
-                      and its field of work. We will not share information about your organisation's
-                      priorities and M&E."),
-                    p("For any questions, contact us at megan@firdaleconsulting.com.")))))),
     fluidRow(column(12,
                     fluidRow(
                       column(
                         8,
                         offset = 2,
                         wellPanel(
+                          # fluidRow(
+                          #   h3("Development landscape survey"), hr(.noWS = "outside")
+                          # ),
                           fluidRow(selectInput(
                             "ngo_or_donor",
                             "NGO, donor, or social impact investor?",
@@ -210,7 +200,7 @@ ui <-
                           fluidRow(
                             conditionalPanel(
                               condition = "input.ngo_or_donor == 'ngo'",
-                              textInput(
+                              textAreaInput(height = "100px",
                                 "service",
                                 "Please provide a description of what your organisation does"
                               )
@@ -220,7 +210,7 @@ ui <-
                               condition = "input.ngo_or_donor == 'ngo'",
                               selectInput(
                                 "priorities",
-                                "Next year, your organisation is prioritising:",
+                                "Next year, your organisation is prioritising",
                                 choices = c("Select any that apply" = "", priorities),
                                 multiple = TRUE
                               )
@@ -255,15 +245,49 @@ ui <-
       column(
         4,
         offset = 5,
-        actionButton("submit", "Submit and continue to the dashboard", class = "btn-primary", onclick = "window.open('https://firdaleconsulting.shinyapps.io/NGO_dashboard/', '_blank')"
+        actionButton("submit", "Submit responses", class = "btn-primary" 
       ))
     )
   )
 
 # Server ####
 server <- function(input, output, session) {
+  
+  # The pop-up at start up
+  startup_modal <- modalDialog(
+    footer = modalButton(label = "Continue to survey"),
+                fluidRow(column(12, offset = 5, 
+                                h1(id="big-heading", ""),
+                                tags$style(HTML("#big-heading{color: white;}")))),
+                fluidRow(column(12,
+                                fluidRow(
+                                  column(
+                                    8,
+                                    offset = 2,
+                                    fluidRow(column(8, offset = 1, h3("Firdale Consulting")),
+                                             column(3, img(
+                                               src = 'firdale_logo_3.svg',
+                                               height = "50px" 
+                                             ))))),
+                                fluidRow(hr()),
+                                fluidRow(column(10, offset = 1,
+                                                p("We want to know more about the NGOs, donors, and
+                                                  social impact investors in South Africa. We also want these
+                                                  organisations to connect with and know more about each other."),
+                                                p("Your responses to the survey will be added to a dashboard that
+                                                  provides a landscape of development organisations in South
+                                                  Africa. This dashboard only uses
+                                                  information regarding your organisation's region of operation
+                                                  and its field of work. We will not share information about your organisation's
+                                                  priorities and M&E."),
+                                                p("For any questions, contact us at megan@firdaleconsulting.com."))))))
+  
+  
+  showModal(startup_modal)
+  
+  
   results <- reactive(
-    c(
+    data.frame(t(unlist(c(
       input$ngo_or_donor,
       input$name,
       input$established,
@@ -278,19 +302,42 @@ server <- function(input, output, session) {
       input$evaluated,
       paste0("pain", sep = "_", input$pain),
       Sys.time()
-    )
+    ))))
   )
   observeEvent(input$submit, {
-    Data <- Data %>%
-      gs_add_row(ws = "Survey", input = results())
+    sheet_append("1bnWcFKSQZo5aMOd_9BdjQIt_W4iMjWvzMODOoepLq6k", data = results())
+    # Data <- Data %>%
+    #   gs_add_row(ws = "Survey", input = results())
   })
   observeEvent(input$submit, {
-    showNotification("Response successfully submitted. Thanks for filling out our form! You will now be taken to the dashboard.", 
-                     type = "message")
+    showModal(modalDialog(footer = actionButton("hyperlink", "Go to dashboard",  onclick = "window.open('https://firdaleconsulting.shinyapps.io/NGO_dashboard/', '_blank')"),
+      fluidRow(column(
+      12, offset = 5,
+      h1(id = "big-heading", ""),
+      tags$style(HTML("#big-heading{color: white;}"))
+    )),
+    fluidRow(column(
+      12,
+      fluidRow(column(8,
+                      offset = 2,
+                      fluidRow(
+                        column(8, offset = 1, h3("Firdale Consulting")),
+                        column(3, img(src = 'firdale_logo_3.svg',
+                                      height = "50px"))
+                      ))),
+      fluidRow(hr()),
+      p("Thank you for filling in the survey! Your response has been successfully recorded.")
+    ))))
   })
-  observeEvent(input$submit, {
-    delay(5000, js$refresh())   ## Delay so that the message stays for 5 secs, then refreshes.
-  })
+  
+  
+  # observeEvent(input$submit, {
+  #   showNotification("Response successfully submitted. Thanks for filling out our form! You will now be taken to the dashboard.", 
+  #                    type = "message")
+  # })
+  # observeEvent(input$submit, {
+  #   delay(5000, js$refresh())   ## Delay so that the message stays for 5 secs, then refreshes.
+  # })
   observe({
     mandatoryFilled <-
       vapply(fieldsMandatory,

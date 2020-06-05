@@ -4,7 +4,7 @@
 
 # Libraries ####
 library(shiny)
-library(googlesheets)
+#library(googlesheets)
 library(tidyverse)
 library(stringr)
 library(shinydashboard)
@@ -24,6 +24,8 @@ library(sf)
 
 library(dplyr)
 library(raster)
+library(googledrive)
+library(googlesheets4)
 
 # Loading logo function ####
 loadingLogo <-
@@ -67,24 +69,25 @@ tags$a(href = href,
        )))
     }
 
+# Authorise the app ####
 
-# 1. Move none to the end of the maps
-# 2. Add data source and describe what the data is.
-# 3. Remove tick labels
-# 4. Change organization to organisation
-# 5. Change title to "Organisation focus areas"
-# 6. Change to lollipop chart
-# 7. Remove the word cloud
-# 8. Send megan the colour scheme.
-# 9. Make map box longer and add in survey info there.
-# 10. Include Firdale Consulting in header. Try on the right, with logo.
-# 11. Hoverplot the lollipop plot with the organisation names and website hyperlink.
+sheets_deauth()
+# set values in options
+options(
+  gargle_oauth_cache = ".secrets",
+  gargle_oauth_email = "tyryn.carnegie@gmail.com"
+)
+# run sheets auth
 
-survey_data <-
-  gs_key("1bnWcFKSQZo5aMOd_9BdjQIt_W4iMjWvzMODOoepLq6k") %>%
-  gs_read(ws = "Survey")
+sheets_auth(path = "client_secret_691536632541-7r4t1u45ntoqhrkddtcmfrr2udblpsen.apps.googleusercontent.com.json")
 
-## Get separate geo dataframes, separated by province
+#list all sheets and ids
+# drive_find(type = "spreadsheet")
+
+# Download data ####
+survey_data <- sheets_read("1bnWcFKSQZo5aMOd_9BdjQIt_W4iMjWvzMODOoepLq6k")
+
+# Get separate geo dataframes, separated by province
 SouthAfricanCities <-
   read_excel("SouthAfricanCities.xls")
 
@@ -1070,7 +1073,7 @@ ui <- dashboardPage(
       collapsible = F,
       fluidRow(
         box(width=4, p("The map shows the location of all the organisations that completed the survey. The aim is to connect development organisations with each other and areas that they can help."), 
-                      p("Looking at the first menu, selecting any of the options (other than “None”) loads a chloropleth map. These chloropleths show each municipality’s average satisfaction for the selected service, with the averages calculated from StatsSA’s Community Survey (2016). In this survey, each of the roughly 900 000 respondents were asked to rate each service: 1 – No service delivery; 2 – Poor; 3 – Average; 4 – Good."), 
+                      p("Looking at the first menu, selecting any of the options (other than “None”) loads a chloropleth map. These chloropleths show each municipality’s average satisfaction for the selected service, with the averages calculated from StatsSA’s Community Survey (2016). In this survey, each of the roughly 900 000 respondents were asked to rate each service: 1 – No service delivery; 2 – Poor service delivery; 3 – Average service delivery; 4 – Good service delivery."), 
                        p("The second menu filters the organisations that appear on the map by their fields of interest. 
                        For any questions or feedback, please contact us at: megan@firdaleconsulting.com
                        
@@ -1235,7 +1238,8 @@ server <- function(input, output) {
         coordDF_2()$name,
         "</a></b>"
       ),
-      paste("Est.", coordDF_2()$established)
+      paste("Est.", coordDF_2()$established),
+      paste(coordDF_2)
     )
   })
   
