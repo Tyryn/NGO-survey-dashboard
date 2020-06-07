@@ -30,7 +30,7 @@ library(shinyWidgets)
 library(V8)
 library(googlesheets4)
 
-# Get shiny token to access google drive
+
 
 
 # Authorise the app ####
@@ -53,7 +53,10 @@ Data <- sheets_read("1bnWcFKSQZo5aMOd_9BdjQIt_W4iMjWvzMODOoepLq6k")
 
 
 ## Get separate geo dataframes, separated by province
-SouthAfricanCities <- read_excel("SouthAfricanCities.xls")
+SouthAfricanCities <- read_excel("SouthAfricanCities.xlsx") %>%
+  dplyr::arrange(City)
+
+
 
 fields <-
   c(
@@ -92,7 +95,7 @@ priorities <-
 jscode <- "shinyjs.refresh = function() { history.go(0); }"
 
 # Code for mandatory fields
-fieldsMandatory <- c("name")
+fieldsMandatory <- c("name", "field")
 
 labelMandatory <- function(label) {
   tagList(label,
@@ -124,9 +127,6 @@ ui <-
                         8,
                         offset = 2,
                         wellPanel(
-                          # fluidRow(
-                          #   h3("Development landscape survey"), hr(.noWS = "outside")
-                          # ),
                           fluidRow(selectInput(
                             "ngo_or_donor",
                             "NGO, donor, or social impact investor?",
@@ -149,24 +149,13 @@ ui <-
                           )),
                           fluidRow(
                             conditionalPanel(
-                              condition = "input.ngo_or_donor == 'ngo'",
-                              selectInput(
+                              condition = "input.ngo_or_donor == 'ngo' || input.ngo_or_donor == 'donor' || input.ngo_or_donor == 'sia'
+                              || input.ngo_or_donor == 'other'",
+                              selectizeInput(
                                 "field",
-                                "Field of work",
-                                choices = c("Select up to 5 from the list" = "", fields),
-                                multiple = TRUE
-                              )
-                            )
-                          ),
-                          fluidRow(
-                            conditionalPanel(
-                              condition = "input.ngo_or_donor == 'donor' || input.ngo_or_donor == 'sia'",
-                              selectInput(
-                                "field_2",
-                                "Main fields of focus",
-                                choices = c("Select from the list" = "", fields),
-                                multiple = TRUE
-                              )
+                                labelMandatory("Field of work"),
+                                choices = c("Select up to 5" = "", fields),
+                                multiple = TRUE, options = list(plugins= list('remove_button'))                              )
                             )
                           ),
                           fluidRow(
@@ -190,11 +179,11 @@ ui <-
                           ),
                           conditionalPanel(
                             condition = "input.country.indexOf('South Africa')>-1",
-                            selectInput(
+                            selectizeInput(
                               "municipality",
                               "South African villages, towns, or cities where your organisation mainly operates",
-                              c("Select up to 10" = "", SouthAfricanCities$AccentCity),
-                              multiple = TRUE
+                              c("Search and select up to 10" = "", SouthAfricanCities$AccentCity),
+                              multiple = TRUE, options = list(plugins= list('remove_button'))
                             )
                           ),
                           fluidRow(
@@ -208,11 +197,11 @@ ui <-
                           fluidRow(
                             conditionalPanel(
                               condition = "input.ngo_or_donor == 'ngo'",
-                              selectInput(
+                              selectizeInput(
                                 "priorities",
                                 "Next year, your organisation is prioritising",
                                 choices = c("Select any that apply" = "", priorities),
-                                multiple = TRUE
+                                multiple = TRUE, options = list(plugins= list('remove_button'))
                               )
                             )),
                           fluidRow(
@@ -293,7 +282,7 @@ server <- function(input, output, session) {
       input$established,
       input$website,
       input$field,
-      input$field_2,
+      # input$field_2,
       paste0("other_description", sep = "_", input$other_description),
       input$country,
       paste0("municipality", sep = "_", input$municipality),
@@ -306,8 +295,6 @@ server <- function(input, output, session) {
   )
   observeEvent(input$submit, {
     sheet_append("1bnWcFKSQZo5aMOd_9BdjQIt_W4iMjWvzMODOoepLq6k", data = results())
-    # Data <- Data %>%
-    #   gs_add_row(ws = "Survey", input = results())
   })
   observeEvent(input$submit, {
     showModal(modalDialog(footer = actionButton("hyperlink", "Go to dashboard",  onclick = "window.open('https://firdaleconsulting.shinyapps.io/NGO_dashboard/', '_blank')"),
