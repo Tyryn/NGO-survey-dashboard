@@ -104,11 +104,34 @@ labelMandatory <- function(label) {
 appCSS <- ".mandatory_star { color: red; }"
 
 # UI ####
-ui <-
+ui <- dashboardPage(
   #fluidPage(setBackgroundColor("#ADD8E6"),
-  fluidPage(setBackgroundColor("#6E876C"),
-            headerPanel(""),
-            tags$style(HTML("
+    # h1(id="big-heading", "South African Development Landscape Survey"),
+    # tags$style(HTML("#big-heading{color: red;font-size:20px;
+    #                 font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;
+    #                 background-color: #6E876C}")),
+    dashboardHeader(
+      title = "South African Development Landscape Survey",
+      titleWidth = 450, 
+      tags$li(
+        a(
+          href = 'https://firdaleconsulting.com', tags$em("Firdale Consulting", style = "font-size:20px; font-style: normal;
+                                                        font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;
+                                                        vertical-align:middle;
+                                                        "),
+          img(src = 'firdale_logo.svg',
+              height = "47px"),
+          style = "padding-top: 1px !important;
+        padding-bottom: 1px !important;padding-left:1px !important;
+        padding-right:10px !important;"
+        ),
+        class = "dropdown"
+      )
+    ),
+    dashboardSidebar(disable = TRUE),
+    dashboardBody(
+      setBackgroundColor("#FFFFFF"),
+      tags$style(HTML("
              .box.box-solid.box-primary>.box-header {
 
                             }
@@ -117,37 +140,70 @@ ui <-
                             
                             background:#f542b3
                             }
-              #submit{margin-bottom:20px}
+              #submit{margin-bottom:20px; background-color: #6E876C;
+              border-color: #6E876C;color: #FFFFFF;}
+              
+                      .box.box-solid.box-primary>.box-header {
+                        color:#FFFFFF;
+                          background-color:#6E876C;}
+                          
+                          .box.box-solid.box-primary{
+                            border-bottom-color:#6E876C;
+                              border-left-color:#6E876C;
+                              border-right-color:#6E876C;
+                              border-top-color:#6E876C;
+                          }
+                        .skin-blue .main-header .logo {
+                          background-color: #6E876C;
+                        }
+                        
+                        /* logo when hovered */
+                          .skin-blue .main-header .logo:hover {
+                            background-color: #6E876C;
+                          }
+                        
+                        /* navbar (rest of the header) */
+                          .skin-blue .main-header .navbar {
+                            background-color: #6E876C;
+                          }
                             ")),
-    shinyjs::useShinyjs(),
-    shinyjs::inlineCSS(appCSS),
+      
+      shinyjs::useShinyjs(),
+      shinyjs::inlineCSS(appCSS),
     fluidRow(column(12,
                     fluidRow(
                       column(
                         8,
                         offset = 2,
                         wellPanel(
-                          fluidRow(selectInput(
+                                          p("We want to know more about the NGOs, donors, and
+                                                  social impact investors in South Africa. We also want these
+                                                  organisations to connect with and know more about each other."),
+                                          p("Your responses to the survey will be added to a dashboard that
+                                                  provides a landscape of development organisations in South
+                                                  Africa. This dashboard only uses
+                                                  information regarding your organisation's region of operation
+                                                  and its field of work. We will not share information about your organisation's
+                                                  priorities and M&E."),
+                                          p("For any questions, contact us at megan@firdaleconsulting.com."),
+                          selectInput(
                             "ngo_or_donor",
                             "NGO, donor, or social impact investor?",
                             choices = c("NGO" = "ngo", "Donor" = "donor", "Social impact investor"=
                                           "sia", "Other"="other")
-                          )),
-                          fluidRow(textInput(
+                          ),
+                          textInput(
                             "name", labelMandatory("Name of organisation"), ""
-                          )),
-                          fluidRow(
+                          ),
                             selectInput(
                               "established",
                               "Year established",
                               choices = 1900:as.numeric(format(Sys.Date(), "%Y")),
                               selected = 2010
-                            )
                           ),
-                          fluidRow(textInput(
+                          textInput(
                             "website", "Organisation's website"
-                          )),
-                          fluidRow(
+                          ),
                             conditionalPanel(
                               condition = "input.ngo_or_donor == 'ngo' || input.ngo_or_donor == 'donor' || input.ngo_or_donor == 'sia'
                               || input.ngo_or_donor == 'other'",
@@ -155,19 +211,16 @@ ui <-
                                 "field",
                                 labelMandatory("Field of work"),
                                 choices = c("Select up to 5" = "", fields),
-                                multiple = TRUE, options = list(plugins= list('remove_button'))                              )
-                            )
+                                multiple = TRUE, options = list(plugins= list('remove_button'))
+                                )
                           ),
-                          fluidRow(
                             conditionalPanel(
                               condition = "input.ngo_or_donor == 'other'",
                               textInput(
                                 "other_description",
                                 "Please describe your organisation"
                               )
-                            )
                           ),
-                          fluidRow(
                               checkboxGroupInput(
                                 "country",
                                 "Regions of operation",
@@ -175,7 +228,6 @@ ui <-
                                             "Southern Africa",
                                             "Rest of world"),
                                 selected = "South Africa"
-                              )
                           ),
                           conditionalPanel(
                             condition = "input.country.indexOf('South Africa')>-1",
@@ -186,43 +238,35 @@ ui <-
                               multiple = TRUE, options = list(plugins= list('remove_button'))
                             )
                           ),
-                          fluidRow(
                             conditionalPanel(
                               condition = "input.ngo_or_donor == 'ngo'",
                               textAreaInput(height = "100px",
                                 "service",
                                 "Please provide a description of what your organisation does"
-                              )
                             )),
-                          fluidRow(
                             conditionalPanel(
                               condition = "input.ngo_or_donor == 'ngo'",
                               selectizeInput(
                                 "priorities",
                                 "Next year, your organisation is prioritising",
-                                choices = c("Select any that apply" = "", priorities),
+                                choices = c("Select all that apply" = "", priorities),
                                 multiple = TRUE, options = list(plugins= list('remove_button'))
-                              )
                             )),
-                          fluidRow(
                             conditionalPanel(
                               condition = "input.ngo_or_donor == 'ngo'",
                               radioButtons(
                                 "evaluated",
                                 "Your organisation has an effective M&E system in place",
                                 choices = c("Agree", "Neutral", "Disagree")
-                              )
                             )
                           ),
-                          fluidRow(
                             conditionalPanel(
                               condition = "input.ngo_or_donor == 'ngo'",
                               selectInput(
                                 "pain",
                                 "What are your organisation's main M&E pain points?",
-                                choices = c("Collecting data", "Establishing a framework", "Finding experts", "Other"),
+                                choices = c("Select all that apply"="", "Collecting data", "Establishing a framework", "Finding experts", "Other"),
                                 multiple = TRUE
-                              )
                             )
                           )
                         )
@@ -237,42 +281,42 @@ ui <-
         actionButton("submit", "Submit responses", class = "btn-primary" 
       ))
     )
-  )
+  ))
 
 # Server ####
 server <- function(input, output, session) {
   
   # The pop-up at start up
-  startup_modal <- modalDialog(
-    footer = modalButton(label = "Continue to survey"),
-                fluidRow(column(12, offset = 5, 
-                                h1(id="big-heading", ""),
-                                tags$style(HTML("#big-heading{color: white;}")))),
-                fluidRow(column(12,
-                                fluidRow(
-                                  column(
-                                    8,
-                                    offset = 2,
-                                    fluidRow(column(8, offset = 1, h3("Firdale Consulting")),
-                                             column(3, img(
-                                               src = 'firdale_logo_3.svg',
-                                               height = "50px" 
-                                             ))))),
-                                fluidRow(hr()),
-                                fluidRow(column(10, offset = 1,
-                                                p("We want to know more about the NGOs, donors, and
-                                                  social impact investors in South Africa. We also want these
-                                                  organisations to connect with and know more about each other."),
-                                                p("Your responses to the survey will be added to a dashboard that
-                                                  provides a landscape of development organisations in South
-                                                  Africa. This dashboard only uses
-                                                  information regarding your organisation's region of operation
-                                                  and its field of work. We will not share information about your organisation's
-                                                  priorities and M&E."),
-                                                p("For any questions, contact us at megan@firdaleconsulting.com."))))))
-  
-  
-  showModal(startup_modal)
+  # startup_modal <- modalDialog(
+  #   footer = modalButton(label = "Continue to survey"),
+  #               fluidRow(column(12, offset = 5, 
+  #                               h1(id="big-heading", ""),
+  #                               tags$style(HTML("#big-heading{color: white;}")))),
+  #               fluidRow(column(12,
+  #                               fluidRow(
+  #                                 column(
+  #                                   8,
+  #                                   offset = 2,
+  #                                   fluidRow(column(8, offset = 1, h3("Firdale Consulting")),
+  #                                            column(3, img(
+  #                                              src = 'firdale_logo_3.svg',
+  #                                              height = "50px" 
+  #                                            ))))),
+  #                               fluidRow(hr()),
+  #                               fluidRow(column(10, offset = 1,
+  #                                               p("We want to know more about the NGOs, donors, and
+  #                                                 social impact investors in South Africa. We also want these
+  #                                                 organisations to connect with and know more about each other."),
+  #                                               p("Your responses to the survey will be added to a dashboard that
+  #                                                 provides a landscape of development organisations in South
+  #                                                 Africa. This dashboard only uses
+  #                                                 information regarding your organisation's region of operation
+  #                                                 and its field of work. We will not share information about your organisation's
+  #                                                 priorities and M&E."),
+  #                                               p("For any questions, contact us at megan@firdaleconsulting.com."))))))
+  # 
+  # 
+  # showModal(startup_modal)
   
   
   results <- reactive(
